@@ -21,6 +21,9 @@
   /* derived: the dark footer is the primary colour darkened, the soft tints are the primary colour lightened */
   --c-primary-dark: color-mix(in oklab, var(--c-primary) 78%, black);
   --c-footer: color-mix(in srgb, var(--c-primary) 48%, black);
+  /* text on the primary / accent colour must be readable (4.5:1): app.vue replaces these two with a darker shade when the theme's colours are too light */
+  --c-primary-btn: color-mix(in srgb, var(--c-primary) 84%, black);
+  --c-accent-btn: color-mix(in srgb, var(--c-accent) 84%, black);
   --c-primary-soft: color-mix(in oklab, var(--c-primary) 12%, white);
   --c-primary-tint: color-mix(in oklab, var(--c-primary) 22%, white);
 }
@@ -29,6 +32,8 @@
   --color-primary: var(--c-primary);
   --color-primary-contrast: var(--c-primary-contrast);
   --color-primary-dark: var(--c-primary-dark);
+  --color-primary-btn: var(--c-primary-btn);
+  --color-accent-btn: var(--c-accent-btn);
   --color-primary-soft: var(--c-primary-soft);
   --color-primary-tint: var(--c-primary-tint);
   --color-accent: var(--c-accent);
@@ -62,9 +67,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
   outline-offset: 2px;
 }
 
-.container-page { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: 16px; }
+.container-page { width: 100%; max-width: 1400px; margin-inline: auto; padding-inline: 16px; }
 @media (min-width: 640px) { .container-page { padding-inline: 24px; } }
-@media (min-width: 1280px) { .container-page { padding-inline: 32px; } }
+@media (min-width: 1280px) { .container-page { padding-inline: 28px; } }
 
 /* a soft page background like the design: a faint teal wash that fades out */
 .page-wash { background: linear-gradient(180deg, var(--c-primary-soft) 0, var(--c-bg) 520px); }
@@ -72,8 +77,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 /* buttons */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; border-radius: 999px; transition: background-color .15s, transform .15s, box-shadow .15s, opacity .15s; cursor: pointer; user-select: none; white-space: nowrap; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
-.btn-primary { background: var(--c-primary); color: var(--c-primary-contrast); box-shadow: 0 8px 18px -10px var(--c-primary); }
-.btn-primary:hover:not(:disabled) { background: var(--c-primary-dark); }
+.btn-primary { background: var(--c-primary-btn); color: var(--c-primary-contrast); box-shadow: 0 8px 18px -10px var(--c-primary-btn); }
+.btn-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--c-primary-btn) 84%, black); }
 .btn-outline { background: var(--c-surface); color: var(--c-primary-dark); border: 1.5px solid var(--c-primary); }
 .btn-outline:hover:not(:disabled) { background: var(--c-primary-soft); }
 .btn-ghost { color: var(--c-text); }

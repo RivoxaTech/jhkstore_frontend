@@ -512,12 +512,10 @@ try {
     await go(page, '/')
     const ratio = await page.evaluate(() => {
       const lum = (rgb) => { const [r, g, b] = rgb.match(/\d+(\.\d+)?/g).slice(0, 3).map((v) => { const c = Number(v) / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
-      const btn = document.querySelector('[data-testid="hero-button"]')
-      const cs = getComputedStyle(btn)
-      const a = lum(cs.color); const b = lum(cs.backgroundColor)
-      return Math.round(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)) * 100) / 100
+      const ratioOf = (sel) => { const cs = getComputedStyle(document.querySelector(sel)); const a = lum(cs.color); const b = lum(cs.backgroundColor); return Math.round(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)) * 100) / 100 }
+      return Math.min(ratioOf('[data-testid="hero-button"]'), ratioOf('[data-testid="add-to-cart"]'), ratioOf('[data-testid="view-all"]'))
     })
-    check(ratio >= 3, 'S16 contrast: white text on the teal "Shop Now" button (large bold text needs 3:1)', ratio)
+    check(ratio >= 4.5, 'S16 contrast: white text on the teal buttons (Shop Now, Add to Cart, View all) is at least 4.5:1 (WCAG AA)', ratio)
     await page.__ctx.close()
   }
 } catch (e) {

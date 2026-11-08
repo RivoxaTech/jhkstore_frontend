@@ -32,13 +32,13 @@ async function addToCart() {
 
 <template>
   <article class="card group flex h-full flex-col overflow-hidden transition-shadow hover:shadow-xl" :data-testid="`product-card`" :data-slug="product.slug">
-    <NuxtLink :to="href" class="relative block aspect-[5/4] overflow-hidden bg-primary-soft" :aria-label="product.name" tabindex="-1">
+    <NuxtLink :to="href" class="relative block aspect-[5/4] overflow-hidden bg-primary-soft" aria-hidden="true" tabindex="-1">
       <img
         v-if="product.image_url" :src="product.image_url" :alt="product.name" :width="product.image_width || 512" :height="product.image_height || 512"
         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" :loading="eager ? 'eager' : 'lazy'" :fetchpriority="eager ? 'high' : undefined" decoding="async"
       >
       <span v-else class="grid h-full w-full place-items-center text-sm text-muted">No picture</span>
-      <span v-if="discount && !soldOut" class="absolute left-2.5 top-2.5 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold text-white">{{ discount }}</span>
+      <span v-if="discount && !soldOut" class="absolute left-2.5 top-2.5 rounded-full bg-accent-btn px-2.5 py-0.5 text-[11px] font-bold text-white">{{ discount }}</span>
       <span v-if="corner" class="absolute right-2.5 top-2.5 rounded-full bg-white/95 px-2.5 py-0.5 text-[11px] font-semibold text-primary-dark shadow-sm">{{ corner }}</span>
       <span v-if="soldOut" class="absolute inset-0 grid place-items-center bg-white/60 text-sm font-bold tracking-wide text-ink">SOLD OUT</span>
     </NuxtLink>
@@ -55,7 +55,7 @@ async function addToCart() {
       <div class="mt-auto flex justify-end pt-2.5">
         <button
           type="button" class="btn btn-primary btn-sm !h-[30px] !px-3 text-[11.5px]" :disabled="soldOut || adding || (isClosed && !multi)" data-testid="add-to-cart"
-          :aria-label="soldOut ? `${product.name}: sold out` : multi ? `Choose an option for ${product.name}` : `Add ${product.name} to the cart`" @click="addToCart"
+          :aria-label="soldOut ? `Sold out, ${product.name}` : multi ? `Choose option, ${product.name}` : `Add to Cart, ${product.name}`" @click="addToCart"
         >
           <LoaderCircle v-if="adding" :size="14" class="animate-spin" /><ShoppingCart v-else :size="14" />
           {{ soldOut ? 'Sold out' : multi ? 'Choose option' : 'Add to Cart' }}

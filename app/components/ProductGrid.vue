@@ -14,8 +14,8 @@ const { cols, set } = useGrid()
   <div>
     <div v-if="toggle" class="mb-3 flex justify-end sm:hidden" data-testid="grid-toggle-wrap">
       <div class="inline-flex rounded-full bg-white p-0.5 shadow-sm ring-1 ring-line" role="group" aria-label="Products per row">
-        <button type="button" class="grid h-8 w-8 place-items-center rounded-full transition" :class="cols === 1 ? 'bg-primary text-primary-contrast' : 'text-muted'" :aria-pressed="cols === 1" aria-label="One product per row" data-testid="grid-1" @click="set(1)"><Square :size="15" /></button>
-        <button type="button" class="grid h-8 w-8 place-items-center rounded-full transition" :class="cols === 2 ? 'bg-primary text-primary-contrast' : 'text-muted'" :aria-pressed="cols === 2" aria-label="Two products per row" data-testid="grid-2" @click="set(2)"><LayoutGrid :size="15" /></button>
+        <button type="button" class="grid h-8 w-8 place-items-center rounded-full transition" :class="cols === 1 ? 'bg-primary-btn text-primary-contrast' : 'text-muted'" :aria-pressed="cols === 1" aria-label="One product per row" data-testid="grid-1" @click="set(1)"><Square :size="15" /></button>
+        <button type="button" class="grid h-8 w-8 place-items-center rounded-full transition" :class="cols === 2 ? 'bg-primary-btn text-primary-contrast' : 'text-muted'" :aria-pressed="cols === 2" aria-label="Two products per row" data-testid="grid-2" @click="set(2)"><LayoutGrid :size="15" /></button>
       </div>
     </div>
 

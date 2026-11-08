@@ -75,7 +75,7 @@ useSeo(() => ({
 
     <section v-if="featured.length" class="container-page pt-16" aria-labelledby="featured-title" data-testid="featured">
       <SectionHeading id="featured-title" label="Featured" title="Our *Favourites*" subtitle="Hand-picked by our team." as="h2" />
-      <div class="mt-9"><ProductGrid :products="featured" /></div>
+      <div class="mt-9"><LazyProductGrid :products="featured" hydrate-on-visible /></div>
     </section>
 
     <section v-if="categories.length" class="container-page pt-16" aria-labelledby="categories-title" data-testid="categories-row">
@@ -90,6 +90,6 @@ useSeo(() => ({
       </ul>
     </section>
 
-    <div class="pt-16"><GiftBanner :banner="data?.secondary" /></div>
+    <div class="pt-16"><LazyGiftBanner :banner="data?.secondary" hydrate-on-visible /></div>
   </div>
 </template>

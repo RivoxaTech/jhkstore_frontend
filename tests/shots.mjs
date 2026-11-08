@@ -28,7 +28,12 @@ for (const size of SIZES) {
     // scroll through the page once so every lazy picture loads before the full-page shot
     await page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 500) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 120)) } window.scrollTo(0, 0) })
     await new Promise((r) => setTimeout(r, 900))
-    await page.screenshot({ path: path.join(OUT, `${name}-${size.name}.png`), fullPage: true })
+    // a tall viewport instead of fullPage: the sticky header stays at the top of the picture
+    const tall = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight))
+    await page.setViewport({ width: size.width, height: Math.min(tall, 14000), deviceScaleFactor: 1 })
+    await new Promise((r) => setTimeout(r, 500))
+    await page.screenshot({ path: path.join(OUT, `${name}-${size.name}.png`) })
+    await page.setViewport({ width: size.width, height: size.height, deviceScaleFactor: 1 })
     console.log('shot', `${name}-${size.name}`)
   }
   await page.close()

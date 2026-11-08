@@ -117,7 +117,7 @@ const crumbs = computed(() => [{ name: 'Home', path: '/' }, ...(product.value?.b
             <div class="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1" data-testid="price-block">
               <span class="text-3xl font-bold" data-testid="price">{{ money(variant?.price ?? product.price) }}</span>
               <span v-if="variant?.compare_price && variant.compare_price > variant.price" class="text-lg text-muted line-through">{{ money(variant.compare_price) }}</span>
-              <span v-if="discountLabel && !soldOut" class="rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-white">{{ discountLabel }}</span>
+              <span v-if="discountLabel && !soldOut" class="rounded-full bg-accent-btn px-2.5 py-0.5 text-xs font-bold text-white">{{ discountLabel }}</span>
             </div>
 
             <fieldset v-if="multi" class="mt-6">
