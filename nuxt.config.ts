@@ -39,7 +39,6 @@ const staticRoutes = ['/', '/shop', '/about', '/contact', '/shipping-policy', '/
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-11-01',
-  future: { compatibilityVersion: 4 },   // the app/ folder layout
   devtools: { enabled: false },
   telemetry: false,
   ssr: true,

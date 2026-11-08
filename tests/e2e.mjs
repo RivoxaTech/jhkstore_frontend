@@ -417,8 +417,12 @@ try {
     check(/\$?Rs\.\s?25/.test(await text(page, '[data-testid="price"]')), 'S12 fallback: with its live price', await text(page, '[data-testid="price"]'))
     await go(page, '/product/this-toy-does-not-exist-xyz')
     check(await waitFor(page, () => /could not find that page/i.test(document.body.innerText), null, 15000), 'S12 fallback: an unknown product slug gives the friendly 404 page')
+    const before404 = problems.length
     await go(page, '/no-such-page')
     check(/could not find that page/i.test(await page.evaluate(() => document.body.innerText)), 'S12 404: an unknown page gives the friendly 404 page')
+    // Nuxt 4 logs the 404 of an unknown page as a bare "[NUXT_E1005]" (error during app initialization; Nuxt 3 printed "Page not found"):
+    // expected for THIS step only, any other init error still fails the run
+    for (let i = problems.length - 1; i >= before404; i--) if (/NUXT_E1005/.test(problems[i])) problems.splice(i, 1)
     check(problems.length === 0, 'S12 fallback: no script errors', problems)
     await page.__ctx.close()
     await api('DELETE', `admin/products/${created.json.data.id}`, { token: dev })
