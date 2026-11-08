@@ -90,6 +90,7 @@ useSeo(() => ({
       </ul>
     </section>
 
-    <div class="pt-16"><LazyGiftBanner :banner="data?.secondary" hydrate-on-visible /></div>
+    <!-- the gift strip is a banner of the admin panel (home_secondary): no banner, no strip -->
+    <div v-if="data?.secondary" class="pt-16"><LazyGiftBanner :banner="data.secondary" hydrate-on-visible /></div>
   </div>
 </template>

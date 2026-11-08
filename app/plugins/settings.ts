@@ -11,7 +11,7 @@ export default defineNuxtPlugin(async () => {
   const state = useSettingsState()
 
   if (import.meta.server && !state.value) {
-    if (remembered && Date.now() - remembered.at < 5 * 60 * 1000) {
+    if (!import.meta.dev && remembered && Date.now() - remembered.at < 5 * 60 * 1000) {   // not in `nuxt dev`: a change made in the admin panel shows at once
       state.value = remembered.value
     } else {
       try {

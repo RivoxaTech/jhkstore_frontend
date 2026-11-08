@@ -6,6 +6,7 @@ const { settings, store, storeName } = useSettings()
 const year = new Date().getFullYear()
 const copyright = computed(() => settings.value?.footer.copyright || `© ${year} ${storeName.value}. All rights reserved.`)
 const links = computed(() => settings.value?.social_links ?? [])
+const agency = computed(() => settings.value?.footer.agency ?? { name: '', url: '', logo_url: null })
 const whatsapp = computed(() => settings.value?.footer.whatsapp_url)
 </script>
 
@@ -15,7 +16,7 @@ const whatsapp = computed(() => settings.value?.footer.whatsapp_url)
       <div class="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1.2fr] lg:gap-0">
         <div class="lg:pr-8">
           <BrandLogo light :height="58" />
-          <p class="mt-3 text-sm font-medium text-white/85">{{ store?.tagline || site.footerFallbackTagline }}</p>
+          <p v-if="store?.tagline" class="mt-3 text-sm font-medium text-white/85">{{ store.tagline }}</p>
           <p v-if="settings?.footer.text" class="mt-3 max-w-xs text-sm text-white/65">{{ settings.footer.text }}</p>
         </div>
 
@@ -48,14 +49,18 @@ const whatsapp = computed(() => settings.value?.footer.whatsapp_url)
         </div>
       </div>
 
-      <div class="flex flex-col gap-2 border-t border-white/15 py-5 text-[13px] text-white/75 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-3 border-t border-white/15 py-5 text-[13px] text-white/75 sm:flex-row sm:items-center sm:justify-between">
         <p>{{ copyright }}</p>
-        <p class="font-medium text-white/90">{{ site.footerTagline }}</p>
+        <!-- "Developed by": name, link and logo come from Settings → Footer & Social of the admin panel (no name = no credit) -->
+        <component
+          :is="agency.url ? 'a' : 'span'" v-if="agency.name" :href="agency.url || undefined" :target="agency.url ? '_blank' : undefined" :rel="agency.url ? 'noopener noreferrer' : undefined"
+          class="inline-flex items-center gap-2.5 self-start text-white/75 sm:self-auto" :class="agency.url ? 'hover:text-white' : ''" data-testid="agency-credit"
+        >
+          <span>Developed by</span>
+          <img v-if="agency.logo_url" :src="agency.logo_url" :alt="agency.name" height="26" class="h-[26px] w-auto rounded-md bg-black" loading="lazy" decoding="async">
+          <strong v-else class="font-semibold text-white">{{ agency.name }}</strong>
+        </component>
       </div>
-      <p v-if="settings?.footer.agency.name" class="pb-4 text-center text-xs text-white/50 sm:text-left">
-        <a v-if="settings.footer.agency.url" :href="settings.footer.agency.url" target="_blank" rel="noopener noreferrer" class="hover:text-white/80">{{ settings.footer.agency.name }}</a>
-        <template v-else>{{ settings.footer.agency.name }}</template>
-      </p>
     </div>
   </footer>
 </template>

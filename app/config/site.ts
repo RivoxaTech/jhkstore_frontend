@@ -14,23 +14,11 @@ export const site = {
     { label: 'Contact', to: '/contact' },
   ],
 
-  /** Used while no `home_hero` banner is live (and as the first picture while the banner loads). The hero picture is /images/hero-fallback.jpg. */
-  heroFallback: {
-    title: 'Smart Toys for *Bright Futures*',
-    subtitle: 'Safe, Educational & Fun Toys for Your Little Ones',
-    buttonText: 'Shop Now',
-    buttonLink: '/shop',
-    image: '/images/hero-fallback.jpg',
-  },
-
-  /** Used while no `home_secondary` banner is live. The picture is /images/gift-fallback.jpg. */
-  giftFallback: {
-    title: 'Perfect Gift for Every *Little Dreamer*',
-    subtitle: "Explore our toys and bring joy to your child's world.",
-    buttonText: 'Shop All Products',
-    buttonLink: '/shop',
-    image: '/images/gift-fallback.jpg',
-  },
+  /**
+   * The hero comes from the `home_hero` banners of the admin panel. While there is none, a plain hero shows the store name and tagline (both from the
+   * admin panel) with this button. The gift strip (`home_secondary`) is shown only when a banner exists.
+   */
+  heroFallback: { buttonText: 'Shop now', buttonLink: '/shop' },
 
   /** The white bar under the hero. `icon` is one of: shield, truck, headset, refresh. */
   trust: [
@@ -48,11 +36,6 @@ export const site = {
     /** More than this many products: show the first ones and a "View all products" button. */
     homeLimit: 12,
   },
-
-  /** The right-aligned line at the bottom of the footer. */
-  footerTagline: 'Safe Toys. Happy Kids.',
-  /** The line under the footer logo when the store has no tagline of its own. */
-  footerFallbackTagline: 'Play. Learn. Grow.',
 
   footer: {
     quickLinks: [

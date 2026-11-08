@@ -5,18 +5,18 @@ import { site } from '~/config/site'
 
 /**
  * The big hero of the home page. Title, subtitle, button and picture come from the live `home_hero` banners of the admin panel (the words between *asterisks*
- * in the title are shown in the accent colour). Several banners = a slider (autoplay, dots, swipe), one = static. No banner = the fallback of config/site.ts.
- * The eyebrow above the title is the store tagline with dots between the words.
+ * in the title are shown in the accent colour). Several banners = a slider (autoplay, dots, swipe), one = static. No banner = a plain hero with the store
+ * name and tagline (admin panel) and no picture. The eyebrow above the title is the store tagline with dots between the words. Colours come from the theme.
  */
 const props = defineProps<{ banners: Banner[] }>()
-const { store } = useSettings()
+const { store, storeName } = useSettings()
 
 const slides = computed(() => props.banners.length
   ? props.banners.map((b) => ({ title: b.title || '', subtitle: b.subtitle || '', button: b.button_text || '', link: b.link_url || '', image: b.image_url, mobile: b.mobile_image_url }))
-  : [{ title: site.heroFallback.title, subtitle: site.heroFallback.subtitle, button: site.heroFallback.buttonText, link: site.heroFallback.buttonLink, image: site.heroFallback.image, mobile: null as string | null }])
+  : [{ title: storeName.value, subtitle: '', button: site.heroFallback.buttonText, link: site.heroFallback.buttonLink, image: null as string | null, mobile: null as string | null }])
 
 const eyebrow = computed(() => {
-  const words = (store.value?.tagline || site.footerFallbackTagline).split(/\s+/).map((w) => w.replace(/[.,;:!?]+$/g, '')).filter(Boolean)
+  const words = (store.value?.tagline || '').split(/\s+/).map((w) => w.replace(/[.,;:!?]+$/g, '')).filter(Boolean)
   return words.map((w) => w.toUpperCase()).join(' • ')
 })
 
@@ -43,29 +43,29 @@ function up(e: PointerEvent) {
 }
 
 const first = computed(() => slides.value[0])
-useHead(() => ({ link: [{ rel: 'preload', as: 'image', href: first.value.image, fetchpriority: 'high' }] }))
+useHead(() => ({ link: first.value.image ? [{ rel: 'preload', as: 'image', href: first.value.image, fetchpriority: 'high' }] : [] }))
 const isExternal = (l: string) => /^https?:\/\//i.test(l)
 </script>
 
 <template>
-  <section class="relative isolate -mt-16 overflow-hidden bg-[#f4fbfb] md:-mt-[76px]" aria-roledescription="carousel" aria-label="Featured" data-testid="hero" @mouseenter="paused = true" @mouseleave="paused = false" @focusin="paused = true" @focusout="paused = false">
+  <section class="relative isolate -mt-16 overflow-hidden bg-[color-mix(in_srgb,var(--c-primary)_7%,var(--c-bg))] md:-mt-[76px]" aria-roledescription="carousel" aria-label="Featured" data-testid="hero" @mouseenter="paused = true" @mouseleave="paused = false" @focusin="paused = true" @focusout="paused = false">
     <div class="relative" @pointerdown="down" @pointerup="up">
       <div
         v-for="(s, i) in slides" :key="i" class="grid min-h-[640px] items-start pt-16 sm:items-center transition-opacity duration-700 sm:min-h-[560px] md:pt-[76px] lg:min-h-[640px]"
         :class="i === index ? 'relative opacity-100' : 'pointer-events-none absolute inset-0 opacity-0'" :aria-hidden="i !== index" role="group" :aria-label="`Slide ${i + 1} of ${slides.length}`"
       >
-        <picture class="absolute inset-x-0 bottom-0 top-[42%] -z-10 sm:inset-0">
+        <picture v-if="s.image" class="absolute inset-x-0 bottom-0 top-[42%] -z-10 sm:inset-0">
           <source v-if="s.mobile" media="(max-width: 639px)" :srcset="s.mobile">
           <img
             :src="s.image" alt="" width="1259" height="650" class="h-full w-full origin-[85%_40%] scale-100 object-cover object-[70%_70%] sm:object-[88%_40%] lg:scale-[1.06]" :loading="i === 0 ? 'eager' : 'lazy'"
             :fetchpriority="i === 0 ? 'high' : 'low'" decoding="async"
           >
         </picture>
-        <div class="absolute inset-0 -z-10 bg-gradient-to-b from-white/95 via-white/65 to-white/0 sm:bg-gradient-to-r sm:from-white/90 sm:via-white/30 sm:to-transparent lg:[background-image:linear-gradient(90deg,rgba(244,251,251,.96)_0%,rgba(244,251,251,.6)_30%,rgba(244,251,251,0)_50%)]" aria-hidden="true" />
+        <div v-if="s.image" class="absolute inset-0 -z-10 bg-gradient-to-b from-page/95 via-page/65 to-page/0 sm:bg-gradient-to-r sm:from-page/90 sm:via-page/30 sm:to-transparent lg:[background-image:linear-gradient(90deg,color-mix(in_srgb,var(--c-bg)_96%,transparent)_0%,color-mix(in_srgb,var(--c-bg)_60%,transparent)_30%,transparent_50%)]" aria-hidden="true" />
 
         <div class="container-page pb-14 pt-8 sm:py-14 lg:py-20">
           <div class="max-w-[560px]">
-            <p class="flex items-center gap-3 text-[15px] font-bold tracking-[0.06em] text-accent">
+            <p v-if="eyebrow" class="flex items-center gap-3 text-[15px] font-bold tracking-[0.06em] text-accent">
               {{ eyebrow }}<span class="h-px w-16 bg-accent/60" aria-hidden="true" />
             </p>
             <h1 v-if="i === 0" class="mt-4 text-[clamp(2.3rem,5.4vw,4.1rem)] font-semibold leading-[1.06]"><AccentText :text="s.title" /></h1>

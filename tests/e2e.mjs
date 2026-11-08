@@ -133,6 +133,18 @@ try {
     check((await count(page, '[data-testid="trust-bar"] li')) === 4, 'S1 home: the trust bar has four items')
     check(/PLAY\s•\sLEARN\s•\sGROW/.test(await page.$eval('[data-testid="hero"]', (e) => e.innerText)), 'S1 home: the eyebrow is the store tagline with dots (PLAY • LEARN • GROW)')
     check(await exists(page, '[data-testid="featured"]') && await exists(page, '[data-testid="categories-row"]') && await exists(page, '[data-testid="gift-banner"]'), 'S1 home: Featured (featured toys differ from the list), the category row and the gift banner')
+    // everything the admin panel controls comes from the API, nothing is fixed in the storefront
+    const pub = (await api('GET', 'store/settings')).json
+    const themeNow = await page.evaluate(() => { const s = getComputedStyle(document.documentElement); return { primary: s.getPropertyValue('--c-primary').trim(), accent: s.getPropertyValue('--c-accent').trim(), bg: s.getPropertyValue('--c-bg').trim(), text: s.getPropertyValue('--c-text').trim() } })
+    check(themeNow.primary.toLowerCase() === pub.theme.primary.toLowerCase() && themeNow.accent.toLowerCase() === pub.theme.accent.toLowerCase() && themeNow.bg.toLowerCase() === pub.theme.bg.toLowerCase() && themeNow.text.toLowerCase() === pub.theme.text.toLowerCase(),
+      'S1 theme: the colours on the page are the ones of Settings → Theme (admin panel), not fixed colours', { page: themeNow, api: { primary: pub.theme.primary, accent: pub.theme.accent, bg: pub.theme.bg, text: pub.theme.text } })
+    const eyebrowWanted = pub.store.tagline.replace(/[.,;:!?]+/g, '').split(/\s+/).join(' • ').toLowerCase()
+    check(await page.$eval('[data-testid="hero"] p', (e, want) => e.innerText.replace(/\s+/g, ' ').trim().toLowerCase().startsWith(want), eyebrowWanted), 'S1 home: the hero eyebrow is the tagline of the admin panel', eyebrowWanted)
+    check(await page.$eval('[data-testid="site-footer"] p', (e, t) => e.innerText.trim() === t, pub.store.tagline), 'S1 footer: the line under the logo is the tagline of the admin panel')
+    const credit = await page.$eval('[data-testid="agency-credit"]', (e) => ({ href: e.getAttribute('href'), text: e.innerText.replace(/\s+/g, ' ').trim(), img: e.querySelector('img')?.getAttribute('src') ?? null, alt: e.querySelector('img')?.getAttribute('alt') ?? null })).catch(() => null)
+    check(!!credit && credit.href === pub.footer.agency.url && /^Developed by/.test(credit.text) && (pub.footer.agency.logo_url ? credit.img === pub.footer.agency.logo_url && credit.alt === pub.footer.agency.name : credit.text.includes(pub.footer.agency.name)),
+      'S1 footer: "Developed by [logo]" at the bottom links to the agency of Settings → Footer & Social (name, link and logo from the admin panel)', credit)
+    check(pub.store.logo_url ? (await page.$eval('header img', (e) => e.getAttribute('src'))) === pub.store.logo_url : true, 'S1 header: the logo is the one uploaded in the admin panel')
     const body = await page.evaluate(() => document.body.innerText)
     const markup = await page.evaluate(() => document.body.innerHTML)
     check(!/★|☆|wishlist|reviews?\b|ratings?\b/i.test(body) && !/lucide-heart|class="[^"]*heart/i.test(markup) && !(await exists(page, '[aria-label*="avorite" i], [aria-label*="wish" i]')), 'S1 home: no star ratings, no review counts, no heart / wishlist', (body.match(/★|☆|wishlist|reviews?\b|ratings?\b/i) || [])[0] ?? '')

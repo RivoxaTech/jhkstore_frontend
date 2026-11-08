@@ -7,7 +7,8 @@ const grid = useGrid()
 useHead(() => ({
   htmlAttrs: { lang: 'en' },
   style: [{ key: 'theme', innerHTML: themeCss(settings.value) }],
-  link: settings.value?.store.favicon_url ? [{ rel: 'icon', href: settings.value.store.favicon_url }] : [{ rel: 'icon', type: 'image/svg+xml', href: '/images/logo.svg' }],
+  // the favicon of the admin panel, else the logo, else an empty icon (no request for /favicon.ico)
+  link: [{ rel: 'icon', href: settings.value?.store.favicon_url || settings.value?.store.logo_url || 'data:,' }],
 }))
 
 onMounted(() => {

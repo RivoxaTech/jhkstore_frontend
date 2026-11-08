@@ -12,16 +12,16 @@ export function useSettings() {
   const state = useSettingsState()
   const settings = computed(() => state.value)
   const store = computed(() => state.value?.store)
-  const storeName = computed(() => state.value?.store?.name || 'JHK Store')
+  const storeName = computed(() => state.value?.store?.name || 'Store')
   const isClosed = computed(() => state.value ? state.value.store.open === false : false)
   return { settings, store, storeName, isClosed, state }
 }
 
-const THEME_DEFAULT_FONT = 'Poppins'
+const THEME_DEFAULT_FONT = 'Inter'   // the default of Settings → Theme
 const SHADOWS: Record<string, string> = {
   none: 'none',
-  soft: '0 6px 24px -10px rgb(4 70 76 / 0.22)',
-  medium: '0 14px 34px -12px rgb(4 70 76 / 0.38)',
+  soft: '0 6px 24px -10px rgb(15 23 42 / 0.18)',
+  medium: '0 14px 34px -12px rgb(15 23 42 / 0.32)',
 }
 
 function fontStack(name: string | undefined): string {
@@ -59,5 +59,6 @@ export function themeCss(s: Settings | null): string {
     '--c-primary-btn': readableOn(t.primary, t.primary_contrast), '--c-accent-btn': readableOn(t.accent, '#FFFFFF'),
     '--font-heading': fontStack(t.font_heading || THEME_DEFAULT_FONT), '--font-body': fontStack(t.font_body || THEME_DEFAULT_FONT),
   }
-  return `:root{${Object.entries(v).map(([k, val]) => `${k}:${val}`).join(';')}}`
+  // `html:root` is more specific than the defaults of main.css (`:root`), so the theme wins whatever the order of the style sheets is
+  return `html:root{${Object.entries(v).map(([k, val]) => `${k}:${val}`).join(';')}}`
 }

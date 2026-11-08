@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
 import type { Banner } from '~/types'
-import { site } from '~/config/site'
 
-/** The soft banner at the bottom of the home page: the first live `home_secondary` banner of the admin panel, else the fallback of config/site.ts. */
-const props = defineProps<{ banner?: Banner | null }>()
-const b = computed(() => props.banner
-  ? { title: props.banner.title || '', subtitle: props.banner.subtitle || '', button: props.banner.button_text || '', link: props.banner.link_url || '/shop', image: props.banner.image_url, mobile: props.banner.mobile_image_url }
-  : { title: site.giftFallback.title, subtitle: site.giftFallback.subtitle, button: site.giftFallback.buttonText, link: site.giftFallback.buttonLink, image: site.giftFallback.image, mobile: null as string | null })
+/** The soft banner at the bottom of the home page: the first live `home_secondary` banner of the admin panel (the page shows nothing when there is none). */
+const props = defineProps<{ banner: Banner }>()
+const b = computed(() => ({ title: props.banner.title || '', subtitle: props.banner.subtitle || '', button: props.banner.button_text || '', link: props.banner.link_url || '/shop', image: props.banner.image_url, mobile: props.banner.mobile_image_url }))
 const isExternal = computed(() => /^https?:\/\//i.test(b.value.link))
 </script>
 

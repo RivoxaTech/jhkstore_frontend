@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
 
 /**
- * JHK Store storefront: a STATIC site (nuxt generate). Everything that search engines read (products, categories, texts, theme) is fetched from the
+ * The storefront: a STATIC site (nuxt generate). Everything that search engines read (products, categories, texts, theme) is fetched from the
  * Laravel API at BUILD time and baked into the HTML; price, stock, cart, coupons, checkout, tracking and search are fetched again in the browser.
  * No server routes, no server middleware, no host-specific features: the same .output/public runs on Cloudflare Pages, cPanel, Netlify or Vercel.
  */
@@ -27,7 +27,7 @@ if (process.env.npm_lifecycle_event === 'generate' && (!settings || !sitemap)) {
 }
 
 const FONT_WEIGHTS = [400, 500, 600, 700]
-const fontNames = [...new Set([settings?.theme?.font_heading, settings?.theme?.font_body, 'Poppins'])]
+const fontNames = [...new Set([settings?.theme?.font_heading, settings?.theme?.font_body])]
   .filter((f): f is string => !!f && f !== 'system-ui')
 
 const dynamicRoutes = [
@@ -55,7 +55,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'theme-color', content: settings?.theme?.primary ?? '#09989E' },
+        { name: 'theme-color', content: settings?.theme?.primary ?? '#2563EB' },
       ],
     },
   },
@@ -77,7 +77,7 @@ export default defineNuxtConfig({
     defaults: { weights: FONT_WEIGHTS, styles: ['normal'], subsets: ['latin'] },
   },
 
-  site: { url: siteUrl, name: settings?.store?.name ?? 'JHK Store', defaultLocale: 'en' },
+  site: { url: siteUrl, name: settings?.store?.name ?? 'Store', defaultLocale: 'en' },
   sitemap: {
     // products, categories and sub-categories come from GET /sitemap (baked in at build time); the static pages are listed by hand
     urls: [

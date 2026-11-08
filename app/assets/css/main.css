@@ -1,22 +1,22 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. The values below are the DEFAULT theme: the real ones come from GET /settings (`theme`) and are written to :root by app.vue
+ * Design tokens. The values below are only the neutral DEFAULT theme (the same as Settings → Theme starts with; nothing store-specific lives here): the real ones come from GET /settings (`theme`) and are written to :root by app.vue
  * (baked into the HTML at build time, so there is no flash). Everything in the site uses these variables, never a fixed colour.
  */
 :root {
-  --c-primary: #09989e;
+  --c-primary: #2563eb;
   --c-primary-contrast: #ffffff;
-  --c-accent: #0a9697;
-  --c-bg: #f5fbfb;
-  --c-surface: #ffffff;
-  --c-text: #15414a;
-  --c-muted: #4b6b71;
-  --c-border: #dcebee;
-  --radius: 16px;
-  --shadow: 0 6px 24px -10px rgb(4 70 76 / 0.22);
-  --font-heading: "Poppins", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --c-accent: #f59e0b;
+  --c-bg: #ffffff;
+  --c-surface: #f8fafc;
+  --c-text: #0f172a;
+  --c-muted: #64748b;
+  --c-border: #e2e8f0;
+  --radius: 8px;
+  --shadow: 0 6px 24px -10px rgb(15 23 42 / 0.18);
+  --font-heading: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
 
   /* derived: the dark footer is the primary colour darkened, the soft tints are the primary colour lightened */
   --c-primary-dark: color-mix(in oklab, var(--c-primary) 78%, black);

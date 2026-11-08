@@ -4,7 +4,7 @@ export interface Settings {
   store: { name: string; tagline: string; logo_url: string | null; favicon_url: string | null; email: string; phone: string; address: string; country: string; open: boolean; closed_message: string }
   checkout: { notice: string; eta_text: string }
   social_links: { platform: string; label: string; url: string }[]
-  footer: { text: string; copyright: string; support_hours: string; whatsapp_number: string; whatsapp_url: string | null; agency: { name: string; url: string } }
+  footer: { text: string; copyright: string; support_hours: string; whatsapp_number: string; whatsapp_url: string | null; agency: { name: string; url: string; logo_url: string | null } }
   seo: { meta_title: string; meta_description: string; share_image_url: string | null }
   currency: { code: string; symbol: string; decimals: number }
   tax: { rate: number; inclusive: boolean; label: string }

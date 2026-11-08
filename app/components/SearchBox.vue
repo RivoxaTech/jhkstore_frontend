@@ -65,7 +65,7 @@ onBeforeUnmount(() => { document.removeEventListener('click', outside); clearTim
 <template>
   <form ref="root" class="relative w-full" role="search" @submit.prevent="submit">
     <label for="site-search" class="sr-only">Search products</label>
-    <div class="flex h-10 items-center rounded-full bg-[#eaf1f3] pl-4 pr-1 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-primary/50">
+    <div class="flex h-10 items-center rounded-full bg-primary-soft pl-4 pr-1 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-primary/50">
       <input
         id="site-search" ref="input" v-model="q" type="search" autocomplete="off" placeholder="Search products..." role="combobox" :aria-expanded="open" aria-controls="search-results"
         class="min-w-0 flex-1 bg-transparent text-[13.5px] text-ink outline-none placeholder:text-muted/70" @keydown="onKey" @focus="results.length && (open = true)"
