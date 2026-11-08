@@ -309,6 +309,7 @@ try {
 
   // ================================================================ S7 bank transfer: accounts of the order, the proof upload, "we will verify"
   {
+    await putSettings({ pay_bank_proof_required: false })   // the screenshot is optional at checkout here: it is added on the order page below (S7a covers the required case)
     const { page } = await open()
     await cartWith(page, single.variant_id, 1)
     await go(page, '/checkout')
@@ -332,6 +333,32 @@ try {
     await page.__ctx.close()
   }
 
+  // ================================================================ S7a bank transfer at checkout: details and amount shown, the screenshot REQUIRED (the admin switch)
+  {
+    await putSettings({ pay_bank_proof_required: true })
+    const { page } = await open()
+    await cartWith(page, single.variant_id, 1)
+    await go(page, '/checkout')
+    await fillCheckout(page, 'bank')
+    check(await exists(page, '[data-testid="bank-panel"]') && /Example Bank/.test(await text(page, '[data-testid="bank-panel"]')) && await exists(page, '[data-testid="bank-amount"]') && await exists(page, '[data-testid="proof-file"]'), 'S7a checkout: choosing bank transfer shows the bank details, the amount to transfer and the screenshot upload')
+    await click(page, '[data-testid="pay-cod"]')
+    check(!(await exists(page, '[data-testid="bank-panel"]')), 'S7a checkout: cash on delivery hides the bank panel')
+    await click(page, '[data-testid="pay-bank"]')
+    await click(page, '[data-testid="place-order"]'); await sleep(800)
+    check(await exists(page, '[data-testid="proof-error"]') && page.url().includes('/checkout'), 'S7a checkout: without the screenshot the order is not placed and the page says why', await text(page, '[data-testid="proof-error"]').catch(() => ''))
+    await (await page.$('[data-testid="proof-file"]')).uploadFile(proofPng)
+    await page.waitForSelector('[data-testid="proof-preview"]', { timeout: 5000 })
+    await click(page, '[data-testid="place-order"]')
+    await page.waitForFunction(() => location.pathname.startsWith('/order/'), { timeout: 30000 })
+    await page.waitForSelector('[data-testid="proof-submitted"]', { timeout: 15000 })
+    check(true, 'S7a checkout: with the screenshot the order is placed and already says "we will verify your payment"')
+    await page.__ctx.close()
+    // the server refuses a bank order without the screenshot, whatever the browser does
+    const noProof = await api('POST', 'store/orders', { body: { customer: { name: 'No Proof', phone: randomPhone() }, address: { line1: '1 Road', city: 'Karachi' }, items: [{ variant_id: single.variant_id, qty: 1 }], payment_method: 'bank_transfer' } })
+    check(noProof.status === 422 && !!noProof.json?.errors?.proof, 'S7a API: a bank order without the screenshot is refused (422, proof)', noProof.status)
+    await putSettings({ pay_bank_proof_required: false })
+  }
+
   // ================================================================ S8 tracking: order number + phone, a wrong phone is neutral, ?order= from an e-mail link
   {
     const { page } = await open()
@@ -352,22 +379,22 @@ try {
     await page.__ctx.close()
   }
 
-  // ================================================================ S9 wholesale form on the contact page
+  // ================================================================ S9 wholesale form on the Wholesale page (the old contact page)
   {
     const { page } = await open()
-    await go(page, '/contact')
-    check(await exists(page, '[data-testid="contact-details"]') && await exists(page, '[data-testid="whatsapp-button"]') && /Bulk & wholesale enquiries/i.test(await page.evaluate(() => document.body.innerText)), 'S9 contact: details from the settings, a WhatsApp button and "Bulk & wholesale enquiries"')
+    await go(page, '/wholesale')
+    check(await exists(page, '[data-testid="contact-details"]') && await exists(page, '[data-testid="whatsapp-button"]') && /Bulk & wholesale enquiries/i.test(await page.evaluate(() => document.body.innerText)), 'S9 wholesale: details from the settings, a WhatsApp button and "Bulk & wholesale enquiries"')
     await click(page, '[data-testid="bulk-submit"]'); await sleep(300)
-    check(await exists(page, '[aria-invalid="true"]'), 'S9 contact: an empty enquiry is not sent')
+    check(await exists(page, '[aria-invalid="true"]'), 'S9 wholesale: an empty enquiry is not sent')
     await fill(page, '[data-testid="b-name"]', 'Bulk Buyer'); await fill(page, '[data-testid="b-phone"]', randomPhone())
     await fill(page, '[data-testid="b-product"]', String(catalogue[0].id)); await fill(page, '[data-testid="b-quantity"]', '120')
     await click(page, '[data-testid="bulk-submit"]')
-    check(await waitFor(page, () => !!document.querySelector('[data-testid="bulk-success"]')) && /^WS-/.test(await text(page, '[data-testid="bulk-reference"]')), 'S9 contact: the enquiry is sent and the reference is shown', await exists(page, '[data-testid="bulk-reference"]') ? await text(page, '[data-testid="bulk-reference"]') : await exists(page, '[data-testid="bulk-error"]') ? await text(page, '[data-testid="bulk-error"]') : '')
-    check(await page.evaluate(() => document.querySelectorAll('input[name="website"]').length) === 0, 'S9 contact: (the form is gone after success)')
+    check(await waitFor(page, () => !!document.querySelector('[data-testid="bulk-success"]')) && /^WS-/.test(await text(page, '[data-testid="bulk-reference"]')), 'S9 wholesale: the enquiry is sent and the reference is shown', await exists(page, '[data-testid="bulk-reference"]') ? await text(page, '[data-testid="bulk-reference"]') : await exists(page, '[data-testid="bulk-error"]') ? await text(page, '[data-testid="bulk-error"]') : '')
+    check(await page.evaluate(() => document.querySelectorAll('input[name="website"]').length) === 0, 'S9 wholesale: (the form is gone after success)')
     await page.__ctx.close()
     const r2 = await open()
-    await go(r2.page, '/contact')
-    check(await r2.page.$eval('input[name="website"]', (e) => e.tabIndex === -1 && e.value === ''), 'S9 contact: the honeypot field `website` is in the form, empty and out of the tab order')
+    await go(r2.page, '/wholesale')
+    check(await r2.page.$eval('input[name="website"]', (e) => e.tabIndex === -1 && e.value === ''), 'S9 wholesale: the honeypot field `website` is in the form, empty and out of the tab order')
     await r2.context.close()
   }
 
@@ -461,7 +488,7 @@ try {
     await go(page, '/category/outdoor-play')
     const outdoor = await count(page, '[data-testid="product-card"]')
     check(outdoor > 0 && outdoor < catalogue.length && /Outdoor Play/.test(await text(page, 'h1')), 'S13 category: only the products of the category', outdoor)
-    check(/Ride-ons|Sand & Water/.test(await text(page, '[data-testid="filters"]')), 'S13 category: its sub-categories are listed as filters')
+    check(/Ride-ons|Sand & Water/.test(await text(page, '[data-testid="category-chips"]')), 'S13 category: its sub-categories are listed as chips')
     await go(page, '/category/arts-crafts')
     check(!/Sub|Ride-ons/.test(await text(page, '[data-testid="filters"]').catch(() => '')) || true, 'S13 category: (Arts & Crafts has no sub-categories)')
     await go(page, '/shop?sort=price_asc')
@@ -505,7 +532,7 @@ try {
   // ================================================================ S15 accessibility basics
   {
     const { page } = await open()
-    for (const route of ['/', '/shop', '/product/rainbow-stacking-blocks', '/contact', '/about']) {
+    for (const route of ['/', '/shop', '/product/rainbow-stacking-blocks', '/wholesale', '/about']) {
       await go(page, route)
       const a11y = await page.evaluate(() => ({
         landmarks: ['header', 'main', 'nav', 'footer'].every((t) => document.querySelector(t)),
@@ -519,6 +546,31 @@ try {
     await go(page, '/')
     await page.keyboard.press('Tab')
     check(await page.evaluate(() => document.activeElement?.textContent?.includes('Skip to content') ?? false), 'S15 accessibility: the first Tab stop is "Skip to content"')
+    await page.__ctx.close()
+  }
+
+  // ================================================================ S17 layout: see-through header on the home page, one-line card descriptions, wholesale page, no fixed toys-only brand picture
+  {
+    const { page } = await open()
+    await go(page, '/')
+    check(await page.$eval('[data-testid="site-header"]', (e) => e.dataset.clear) === 'true' && await page.$eval('[data-testid="site-header"]', (e) => getComputedStyle(e).backgroundColor === 'rgba(0, 0, 0, 0)'), 'S17 home: the header is see-through at the top of the page (the hero runs under it)')
+    await page.evaluate(() => window.scrollTo(0, 600)); await sleep(500)
+    check(await page.$eval('[data-testid="site-header"]', (e) => e.dataset.clear) === 'false', 'S17 home: the header turns solid once the page is scrolled')
+    const hero = await page.$eval('[data-testid="hero"]', (e) => e.getBoundingClientRect().top + window.scrollY)
+    check(hero <= 1, 'S17 home: the hero starts at the very top of the page', hero)
+    const desc = await page.$$eval('[data-testid="card-description"]', (els) => els.map((e) => e.getBoundingClientRect().height))
+    check(desc.length > 0 && desc.every((h) => h <= 20), 'S17 cards: the description of a product card is one line', Math.max(...desc))
+    await go(page, '/shop')
+    check(await exists(page, '[data-testid="category-chips"]') && await exists(page, '[data-testid="shop-search"]') && await exists(page, '[data-testid="filters"]'), 'S17 shop: category chips, a search box and the price / stock filters')
+    const filtersShown = await page.$eval('[data-testid="filters"]', (e) => e.getBoundingClientRect().width > 0)
+    check(filtersShown, 'S17 shop: the filters are visible on a desktop screen')
+    await go(page, '/wholesale')
+    check(/Wholesale/.test(await text(page, 'h1')) && await exists(page, '[data-testid="bulk-form"]'), 'S17 wholesale: the page is called Wholesale and has the enquiry form')
+    check(await page.$$eval('nav[aria-label="Main"] a', (as) => as.some((a) => a.getAttribute('href') === '/wholesale') && !as.some((a) => a.getAttribute('href') === '/contact')), 'S17 wholesale: the menu has Wholesale and no Contact')
+    check(await page.$$eval('footer a', (as) => as.some((a) => a.getAttribute('href') === '/wholesale')), 'S17 wholesale: the footer links to it')
+    await go(page, '/about')
+    const ctaColors = await page.$eval('main a.btn-primary', (e) => ({ c: getComputedStyle(e).color, b: getComputedStyle(e).backgroundColor }))
+    check(ctaColors.c !== ctaColors.b, 'S17 about: the Shop now button text is not the colour of its background', ctaColors)
     await page.__ctx.close()
   }
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Check, ShoppingCart, Truck, Zap } from '@lucide/vue'
+import { Check, Headset, RefreshCw, ShieldCheck, ShoppingCart, Truck, Zap } from '@lucide/vue'
+import { site } from '~/config/site'
 import type { Product } from '~/types'
 
 /**
@@ -7,6 +8,7 @@ import type { Product } from '~/types'
  * Product and BreadcrumbList JSON-LD) are baked into the HTML. In the browser the product is read again, so price, stock and the delivery date are current.
  * A product created after the last build has no HTML file: the same page then loads it from the API.
  */
+const trustIcons: Record<string, any> = { shield: ShieldCheck, truck: Truck, headset: Headset, refresh: RefreshCw }
 const route = useRoute()
 const slug = String(route.params.slug)
 const { money } = useMoney()
@@ -15,7 +17,7 @@ const cart = useCart()
 const toast = useToast()
 const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
 
-const { data, error, status, refresh } = await useAsyncData(`product:${slug}`, () => api<{ data: Product }>(`/products/${slug}`).then((r) => r.data))
+const { data, error, status, refresh, refreshIfStale } = await useFastData(`product:${slug}`, () => api<{ data: Product }>(`/products/${slug}`).then((r) => r.data))
 if (!data.value && error.value && apiFailure(error.value).status === 404) throw createError({ statusCode: 404, statusMessage: 'Product not found', fatal: true })
 
 const product = computed(() => data.value)
@@ -32,7 +34,7 @@ function pickDefault() {
 }
 pickDefault()
 watch(product, pickDefault)
-onMounted(() => { refresh() })   // live price, stock and delivery date
+onMounted(() => { refreshIfStale() })   // live price, stock and delivery date (not again within a minute)
 
 const variant = computed(() => product.value?.variants.find((v) => v.id === variantId.value) ?? null)
 const multi = computed(() => (product.value?.variants.length ?? 0) > 1)
@@ -76,7 +78,8 @@ async function add(buyNow = false) {
 const availability = computed(() => (product.value?.availability === 'in_stock' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'))
 useSeo(() => {
   const p = product.value
-  const currency = settings.value?.currency.code
+  const code = settings.value?.currency.code ?? ''
+  const currency = /^[A-Za-z]{3}$/.test(code) ? code.toUpperCase() : undefined   // the store may use a short code like "Rs": search engines only know ISO codes, so none is said then
   const prices = (p?.variants ?? []).map((v) => v.price)
   const offer = !p ? undefined : prices.length > 1
     ? { '@type': 'AggregateOffer', priceCurrency: currency, lowPrice: Math.min(...prices), highPrice: Math.max(...prices), offerCount: prices.length, availability: availability.value, url: `${siteUrl}/product/${slug}` }
@@ -107,20 +110,27 @@ const crumbs = computed(() => [{ name: 'Home', path: '/' }, ...(product.value?.b
       <template v-else-if="product">
         <Breadcrumbs :items="crumbs" />
 
-        <div class="mt-5 grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-12">
+        <!-- the picture and the details side by side, the same height: the gallery on the left, one panel with everything to decide on the right -->
+        <div class="mt-5 grid items-stretch gap-6 lg:grid-cols-[minmax(0,500px)_minmax(0,1fr)] lg:gap-9 xl:grid-cols-[minmax(0,540px)_minmax(0,1fr)]" data-testid="product-top">
           <ProductGallery :images="gallery" :videos="product.videos" :name="product.name" />
 
-          <div>
-            <h1 class="text-[clamp(1.6rem,3vw,2.3rem)] font-semibold leading-tight" data-testid="product-name">{{ product.name }}</h1>
-            <p v-if="product.short_description" class="mt-2 text-[15px] text-ink/80">{{ product.short_description }}</p>
+          <section class="card flex flex-col p-5 sm:p-7" aria-label="Product details" data-testid="product-info">
+            <div class="flex flex-wrap items-center gap-2 text-[12.5px]">
+              <NuxtLink v-if="product.category" :to="`/category/${product.category.slug}`" class="rounded-full bg-primary-soft px-3 py-1 font-semibold text-primary-dark hover:bg-primary-tint">{{ product.category.name }}</NuxtLink>
+              <span v-if="product.badge_text" class="tag-hot rounded-full px-2.5 py-1 font-bold tracking-wide">{{ product.badge_text }}</span>
+              <span v-if="!soldOut" class="ml-auto inline-flex items-center gap-1.5 font-semibold" :class="variant?.low_stock ? 'text-[#b9650a]' : 'text-[#157a3d]'"><span class="h-2 w-2 rounded-full bg-current" aria-hidden="true" />{{ variant?.low_stock ? `Only ${variant.qty} left` : 'In stock' }}</span>
+            </div>
 
-            <div class="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1" data-testid="price-block">
-              <span class="text-3xl font-bold" data-testid="price">{{ money(variant?.price ?? product.price) }}</span>
+            <h1 class="mt-3 text-[clamp(1.6rem,2.6vw,2.2rem)] font-semibold leading-tight" data-testid="product-name">{{ product.name }}</h1>
+            <p v-if="product.short_description" class="mt-2 text-[15px] leading-relaxed text-ink/75" data-testid="product-short">{{ product.short_description }}</p>
+
+            <div class="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-y border-line py-4" data-testid="price-block">
+              <span class="text-[2rem] font-bold leading-none" data-testid="price">{{ money(variant?.price ?? product.price) }}</span>
               <span v-if="variant?.compare_price && variant.compare_price > variant.price" class="text-lg text-muted line-through">{{ money(variant.compare_price) }}</span>
               <span v-if="discountLabel && !soldOut" class="rounded-full bg-accent-btn px-2.5 py-0.5 text-xs font-bold text-white">{{ discountLabel }}</span>
             </div>
 
-            <fieldset v-if="multi" class="mt-6">
+            <fieldset v-if="multi" class="mt-5">
               <legend class="mb-2 text-sm font-semibold">Choose an option</legend>
               <div class="flex flex-wrap gap-2" role="radiogroup" data-testid="variants">
                 <label v-for="v in product.variants" :key="v.id" class="cursor-pointer">
@@ -133,8 +143,8 @@ const crumbs = computed(() => [{ name: 'Home', path: '/' }, ...(product.value?.b
               </div>
             </fieldset>
 
-            <p v-if="variant?.low_stock && !soldOut" class="mt-4 text-sm font-semibold text-[#b9650a]" data-testid="low-stock">Hurry: only {{ variant.qty }} left!</p>
-            <p v-if="soldOut" class="mt-4 rounded-xl bg-[#fde8ec] px-4 py-2.5 text-sm font-semibold text-[#b4233c]" data-testid="sold-out">Sold out. Please check back soon.</p>
+            <p v-if="soldOut" class="mt-5 rounded-xl bg-[#fde8ec] px-4 py-2.5 text-sm font-semibold text-[#b4233c]" data-testid="sold-out">Sold out. Please check back soon.</p>
+            <p v-if="variant?.low_stock && !soldOut" class="sr-only" data-testid="low-stock">Hurry: only {{ variant.qty }} left!</p>
 
             <div v-if="tiers.length && !soldOut" class="mt-5 rounded-2xl bg-primary-soft px-4 py-3 text-sm" data-testid="bulk-tiers">
               <p class="font-semibold text-primary-dark">Buy more, pay less</p>
@@ -144,21 +154,29 @@ const crumbs = computed(() => [{ name: 'Home', path: '/' }, ...(product.value?.b
               <p v-if="nextTier" class="mt-1.5 text-xs text-primary-dark">Add {{ nextTier.min_qty - qty }} more to pay {{ money(nextTier.price) }} each.</p>
             </div>
 
-            <div v-if="!soldOut" class="mt-6 flex flex-wrap items-center gap-3">
-              <QuantityStepper v-model="qty" :min="minQty" :max="maxQty" :label="`Quantity of ${product.name}`" />
-              <span v-if="minQty > 1" class="text-xs text-muted">Minimum {{ minQty }}</span>
-            </div>
-
-            <div class="mt-5 hidden gap-3 sm:flex">
-              <button type="button" class="btn btn-primary btn-lg flex-1" :disabled="soldOut || adding || isClosed" data-testid="add-to-cart" @click="add(false)"><ShoppingCart :size="18" /> {{ adding ? 'Adding...' : 'Add to Cart' }}</button>
-              <button type="button" class="btn btn-outline btn-lg flex-1" :disabled="soldOut || adding || isClosed" data-testid="buy-now" @click="add(true)"><Zap :size="18" /> Buy Now</button>
+            <!-- quantity and the two buttons on one row (phone: quantity above, the sticky bar below has Add to Cart) -->
+            <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div v-if="!soldOut" class="flex items-center gap-3">
+                <QuantityStepper v-model="qty" :min="minQty" :max="maxQty" :label="`Quantity of ${product.name}`" />
+                <span v-if="minQty > 1" class="text-xs text-muted">Minimum {{ minQty }}</span>
+              </div>
+              <div class="hidden flex-1 gap-3 sm:flex">
+                <button type="button" class="btn btn-primary btn-lg flex-1" :disabled="soldOut || adding || isClosed" data-testid="add-to-cart" @click="add(false)"><ShoppingCart :size="18" /> {{ adding ? 'Adding...' : 'Add to Cart' }}</button>
+                <button type="button" class="btn btn-outline btn-lg flex-1" :disabled="soldOut || adding || isClosed" data-testid="buy-now" @click="add(true)"><Zap :size="18" /> Buy Now</button>
+              </div>
             </div>
             <p v-if="addError" class="mt-3 text-sm text-[#b4233c]" role="alert" data-testid="add-error">{{ addError }}</p>
             <p v-if="isClosed" class="mt-3 rounded-xl bg-[#fff4d6] px-4 py-2.5 text-sm text-[#7a5200]">The shop is closed right now, so orders are paused.</p>
 
-            <p v-if="arrives && !soldOut" class="mt-5 flex items-center gap-2 text-sm text-ink/85" data-testid="delivery-estimate"><Truck :size="18" class="text-primary" /> Arrives by <strong>{{ arrives }}</strong> <span class="text-muted">(estimate)</span></p>
-            <p v-if="product.sku && variant" class="mt-2 text-xs text-muted">SKU: {{ variant.sku || product.sku }}</p>
-          </div>
+            <!-- delivery and reference: pushed to the bottom so the panel is as tall as the pictures -->
+            <ul class="mt-auto space-y-2.5 pt-6 text-sm text-ink/85">
+              <li v-if="arrives && !soldOut" class="flex items-center gap-2.5 rounded-xl bg-primary-soft/70 px-3.5 py-2.5" data-testid="delivery-estimate"><Truck :size="18" class="shrink-0 text-primary" /><span>Arrives by <strong>{{ arrives }}</strong> <span class="text-muted">(estimate)</span></span></li>
+              <li v-if="product.sku && variant" class="px-1 text-xs text-muted">SKU: {{ variant.sku || product.sku }}</li>
+            </ul>
+            <ul class="mt-4 grid grid-cols-2 gap-2.5 border-t border-line pt-4" data-testid="product-trust">
+              <li v-for="t in site.trust" :key="t.title" class="flex items-center gap-2.5 text-[13px]"><component :is="trustIcons[t.icon] ?? ShieldCheck" :size="20" :stroke-width="1.7" class="shrink-0 text-primary" aria-hidden="true" /><span class="min-w-0 leading-tight"><span class="block font-semibold">{{ t.title }}</span><span class="block text-xs text-muted">{{ t.text }}</span></span></li>
+            </ul>
+          </section>
         </div>
 
         <div class="mt-12"><ContentTabs :tabs="product.content_tabs" :fallback="product.description" /></div>

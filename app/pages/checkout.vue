@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Banknote, CreditCard, LoaderCircle, ShieldCheck, TriangleAlert } from '@lucide/vue'
+import { Banknote, Check, Copy, CreditCard, ImageUp, LoaderCircle, ShieldCheck, TriangleAlert, X } from '@lucide/vue'
 import type { Order, Quote } from '~/types'
 import type { ApiFailure } from '~/composables/useApi'
 
@@ -7,6 +7,8 @@ import type { ApiFailure } from '~/composables/useApi'
  * One-page checkout (client only, not indexed). The cart lives on the server: this page asks the server to price it (POST /checkout/quote) whenever the address
  * or the coupon changes and shows the server's totals, never a sum of its own. Placing the order sends an Idempotency-Key (created when the page opens, so a double
  * tap or a retry never makes two orders), the total the customer saw (a changed price is explained and has to be confirmed), and the hidden honeypot field `website`.
+ * Bank transfer: the bank details and the amount are shown right here and the customer attaches the screenshot of the transfer; when the shop requires it
+ * (Settings → Payments) the order cannot be placed without it. The order and the screenshot travel together (multipart).
  */
 useSeo({ title: 'Checkout', path: '/checkout', noindex: true })
 const cart = useCart()
@@ -30,6 +32,8 @@ const couponMessage = ref('')
 const payment = computed(() => settings.value?.payment)
 const codOn = computed(() => payment.value?.cod.enabled ?? true)
 const bankOn = computed(() => payment.value?.bank_transfer.enabled ?? false)
+const bank = computed(() => payment.value?.bank_transfer)
+const proofRequired = computed(() => bankOn.value && (bank.value?.proof_required ?? false))
 const cardVisible = computed(() => payment.value?.card.visible ?? false)
 const summary = computed(() => quote.value?.summary ?? cart.cart.value?.summary)
 const lines = computed(() => quote.value?.items ?? cart.lines.value)
@@ -43,8 +47,7 @@ onMounted(async () => {
   idempotencyKey.value = crypto.randomUUID()
   form.country = settings.value?.store.country || ''
   pickPayment()
-  await cart.refresh()
-  await requote()
+  await Promise.all([cart.refresh(), requote()])   // both only need the cart token: ask at the same time
 })
 watch([codOn, bankOn], pickPayment)
 
@@ -71,6 +74,46 @@ async function applyCoupon() {
 }
 async function dropCoupon() { await cart.removeCoupon(); await requote() }
 
+// ---- the screenshot of a bank transfer
+const MAX_PROOF = 4 * 1024 * 1024
+const proof = ref<File | null>(null)
+const proofPreview = ref('')
+const proofError = ref('')
+const proofReference = ref('')
+const copied = ref('')
+function pickProof(e: Event) {
+  const input = e.target as HTMLInputElement
+  const f = input.files?.[0] ?? null
+  proofError.value = ''
+  if (!f) return
+  if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { proofError.value = 'Please choose a JPG, PNG or WEBP picture.'; input.value = ''; return }
+  if (f.size > MAX_PROOF) { proofError.value = 'This picture is larger than 4 MB. Please choose a smaller one.'; input.value = ''; return }
+  dropProof()
+  proof.value = f
+  proofPreview.value = URL.createObjectURL(f)
+}
+function dropProof() {
+  if (proofPreview.value) URL.revokeObjectURL(proofPreview.value)
+  proof.value = null
+  proofPreview.value = ''
+}
+onBeforeUnmount(dropProof)
+async function copy(text: string, id: string) {
+  try { await navigator.clipboard.writeText(text); copied.value = id; setTimeout(() => { if (copied.value === id) copied.value = '' }, 1600) } catch { /* the number can still be selected by hand */ }
+}
+
+/** The order as multipart: nested fields as customer[name], address[city]... (the screenshot is one more part). */
+function toFormData(value: Record<string, any>, fd = new FormData(), prefix = ''): FormData {
+  for (const [k, v] of Object.entries(value)) {
+    if (v === undefined || v === null) continue
+    const key = prefix ? `${prefix}[${k}]` : k
+    if (v instanceof File) fd.append(key, v)
+    else if (typeof v === 'object') toFormData(v, fd, key)
+    else fd.append(key, String(v))
+  }
+  return fd
+}
+
 // ---- validation
 const errors = computed(() => {
   const e: Record<string, string> = {}
@@ -80,6 +123,7 @@ const errors = computed(() => {
   if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Please enter a valid e-mail address, or leave it empty.'
   if (!form.line1.trim()) e.line1 = 'Please enter your street address.'
   if (!form.city.trim()) e.city = 'Please enter your city.'
+  if (form.payment === 'bank_transfer' && proofRequired.value && !proof.value) e.proof = 'Please upload the screenshot of your transfer to place the order.'
   return e
 })
 
@@ -90,7 +134,7 @@ const canPlace = computed(() => !!quote.value?.can_checkout && !closed.value && 
 async function place(confirmChange = false) {
   touched.value = true
   problem.value = null
-  if (Object.keys(errors.value).length) { await nextTick(); document.querySelector('[aria-invalid="true"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return }
+  if (Object.keys(errors.value).length) { await nextTick(); (document.querySelector('[aria-invalid="true"]') ?? document.querySelector('[data-testid="proof-error"]'))?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return }
   if (confirmChange && priceChanged.value) { /* the total the customer now agrees to is the server's current one */ }
   submitting.value = true
   const expected = confirmChange && priceChanged.value ? priceChanged.value.current : quote.value?.summary.grand_total
@@ -103,8 +147,10 @@ async function place(confirmChange = false) {
     expected_total: expected,
     website: form.website,   // the honeypot: a real visitor never fills it
   }
+  const withProof = form.payment === 'bank_transfer' && !!proof.value
+  if (withProof) { body.proof = proof.value; if (proofReference.value.trim()) body.reference = proofReference.value.trim() }
   try {
-    const res = await api<{ data: Order }>('/orders', { method: 'POST', body, headers: { 'Idempotency-Key': idempotencyKey.value } })
+    const res = await api<{ data: Order }>('/orders', { method: 'POST', body: withProof ? toFormData(body) : body, headers: { 'Idempotency-Key': idempotencyKey.value } })
     priceChanged.value = null
     memory.remember(res.data, form.phone.trim())
     await cart.afterOrder()
@@ -124,7 +170,7 @@ async function explain(f: ApiFailure) {
     return
   }
   if (f.status === 429) { problem.value = { code: 'rate_limited', message: f.message }; return }
-  if (code === 'cart_invalid') { problem.value = { code, message: f.message || 'Some items in your cart can no longer be ordered.', lines: f.data?.lines ?? [] }; await cart.refresh(); await requote(); return }
+  if (code === 'cart_invalid') { problem.value = { code, message: f.message || 'Some items in your cart can no longer be ordered.', lines: f.data?.lines ?? [] }; await cart.refresh(undefined, true); await requote(); return }
   if (code === 'below_min_order') { problem.value = { code, message: f.message || 'Your order is below the minimum order amount.' }; await requote(); return }
   if (code === 'cod_not_allowed') { problem.value = { code, message: f.message || 'Cash on delivery is not available for this order.' }; if (bankOn.value) form.payment = 'bank_transfer'; return }
   if (code === 'coupon_invalid') { problem.value = { code, message: f.data?.coupon_error?.message || f.message }; return }
@@ -136,6 +182,7 @@ async function explain(f: ApiFailure) {
 }
 
 const showField = (k: string) => touched.value && errors.value[k]
+const showProofError = computed(() => (touched.value && errors.value.proof) || proofError.value)
 </script>
 
 <template>
@@ -193,9 +240,55 @@ const showField = (k: string) => touched.value && errors.value[k]
               <label v-if="codOn" class="flex cursor-pointer items-start gap-3 rounded-2xl border-[1.5px] p-4 transition" :class="form.payment === 'cod' ? 'border-primary bg-primary-soft' : 'border-line hover:border-primary/50'">
                 <input v-model="form.payment" type="radio" value="cod" class="mt-1 accent-[var(--c-primary)]" data-testid="pay-cod"><span><span class="flex items-center gap-2 font-semibold"><Banknote :size="18" class="text-primary" /> Cash on delivery</span><span class="block text-sm text-muted">Pay the courier when your order arrives.</span></span>
               </label>
-              <label v-if="bankOn" class="flex cursor-pointer items-start gap-3 rounded-2xl border-[1.5px] p-4 transition" :class="form.payment === 'bank_transfer' ? 'border-primary bg-primary-soft' : 'border-line hover:border-primary/50'">
-                <input v-model="form.payment" type="radio" value="bank_transfer" class="mt-1 accent-[var(--c-primary)]" data-testid="pay-bank"><span><span class="flex items-center gap-2 font-semibold"><ShieldCheck :size="18" class="text-primary" /> Bank transfer</span><span class="block text-sm text-muted">We show you the bank details after you order, then you upload a screenshot of the transfer.</span></span>
-              </label>
+              <div v-if="bankOn" class="rounded-2xl border-[1.5px] transition" :class="form.payment === 'bank_transfer' ? 'border-primary bg-primary-soft' : 'border-line hover:border-primary/50'">
+                <label class="flex cursor-pointer items-start gap-3 p-4">
+                  <input v-model="form.payment" type="radio" value="bank_transfer" class="mt-1 accent-[var(--c-primary)]" data-testid="pay-bank"><span><span class="flex items-center gap-2 font-semibold"><ShieldCheck :size="18" class="text-primary" /> Bank transfer</span><span class="block text-sm text-muted">Transfer the amount to our account, then upload the screenshot of the payment.</span></span>
+                </label>
+
+                <!-- the details and the upload appear as soon as bank transfer is chosen -->
+                <div v-if="form.payment === 'bank_transfer'" class="space-y-5 border-t border-primary/20 px-4 pb-5 pt-4 sm:px-5" data-testid="bank-panel">
+                  <div v-if="bank?.accounts.length">
+                    <p class="text-xs font-bold uppercase tracking-wider text-muted">Our bank details</p>
+                    <ul class="mt-2 space-y-3">
+                      <li v-for="(a, i) in bank.accounts" :key="i" class="rounded-xl bg-white p-3.5 text-sm shadow-sm ring-1 ring-line" data-testid="bank-account">
+                        <p class="font-semibold">{{ a.bank }}<span v-if="a.title" class="font-normal text-muted"> · {{ a.title }}</span></p>
+                        <dl class="mt-2 space-y-1.5">
+                          <div v-if="a.number" class="flex items-center justify-between gap-3"><dt class="text-muted">Account</dt><dd class="flex items-center gap-2 font-mono font-medium">{{ a.number }}<button type="button" class="grid h-7 w-7 place-items-center rounded-full text-muted hover:bg-primary-soft hover:text-primary-dark" :aria-label="`Copy the account number of ${a.bank}`" @click="copy(a.number, `n${i}`)"><Check v-if="copied === `n${i}`" :size="14" class="text-primary" /><Copy v-else :size="14" /></button></dd></div>
+                          <div v-if="a.iban" class="flex items-center justify-between gap-3"><dt class="text-muted">IBAN</dt><dd class="flex items-center gap-2 break-all font-mono font-medium">{{ a.iban }}<button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted hover:bg-primary-soft hover:text-primary-dark" :aria-label="`Copy the IBAN of ${a.bank}`" @click="copy(a.iban, `i${i}`)"><Check v-if="copied === `i${i}`" :size="14" class="text-primary" /><Copy v-else :size="14" /></button></dd></div>
+                        </dl>
+                      </li>
+                    </ul>
+                  </div>
+                  <p v-if="bank?.instructions" class="whitespace-pre-line rounded-xl bg-white/70 px-3.5 py-2.5 text-sm" data-testid="bank-instructions">{{ bank.instructions }}</p>
+
+                  <div v-if="summary" class="flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 ring-1 ring-line" data-testid="bank-amount">
+                    <div><p class="text-xs font-bold uppercase tracking-wider text-muted">Amount to transfer now</p><p v-if="summary.delivery_pending" class="mt-0.5 text-xs text-muted">The products total. The delivery fee is confirmed with you after you order.</p></div>
+                    <p class="flex items-center gap-1.5 text-xl font-bold">{{ money(summary.grand_total) }}<button type="button" class="grid h-7 w-7 place-items-center rounded-full text-muted hover:bg-primary-soft hover:text-primary-dark" aria-label="Copy the amount" @click="copy(String(summary.grand_total), 'amount')"><Check v-if="copied === 'amount'" :size="14" class="text-primary" /><Copy v-else :size="14" /></button></p>
+                  </div>
+
+                  <div>
+                    <p class="field-label">Payment screenshot <span v-if="proofRequired" class="text-[#b4233c]">*</span><span v-else class="font-normal text-muted">(optional, you can also add it later)</span></p>
+                    <div class="rounded-xl border-[1.5px] border-dashed bg-white p-4" :class="showProofError ? 'border-[#d6455d]' : 'border-primary/40'">
+                      <div class="flex items-center gap-4">
+                        <span class="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-lg bg-primary-soft text-primary">
+                          <img v-if="proofPreview" :src="proofPreview" alt="Preview of your payment screenshot" class="h-full w-full object-cover" data-testid="proof-preview"><ImageUp v-else :size="28" :stroke-width="1.6" />
+                        </span>
+                        <div class="min-w-0 flex-1 text-sm">
+                          <p class="text-muted">A screenshot or photo of the transfer. JPG, PNG or WEBP, up to 4 MB.</p>
+                          <div class="mt-2 flex flex-wrap items-center gap-2">
+                            <label class="btn btn-outline btn-sm cursor-pointer"><ImageUp :size="14" /> {{ proof ? 'Change screenshot' : 'Choose screenshot' }}<input id="proof-file" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" data-testid="proof-file" @change="pickProof"></label>
+                            <button v-if="proof" type="button" class="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-[#b4233c]" @click="dropProof"><X :size="13" /> Remove</button>
+                            <span v-if="proof" class="truncate text-xs text-muted">{{ proof.name }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p v-if="showProofError" class="field-error" role="alert" data-testid="proof-error">{{ showProofError }}</p>
+                    <div class="mt-3"><label class="field-label" for="proof-ref">Transaction reference <span class="font-normal text-muted">(optional)</span></label><input id="proof-ref" v-model="proofReference" maxlength="120" class="field-input" placeholder="The bank's transaction id"></div>
+                  </div>
+                </div>
+              </div>
+
               <div v-if="cardVisible" class="flex items-start gap-3 rounded-2xl border-[1.5px] border-line p-4 opacity-60" aria-disabled="true"><input type="radio" disabled class="mt-1"><span><span class="flex items-center gap-2 font-semibold"><CreditCard :size="18" /> Card payment</span><span class="block text-sm text-muted">Coming soon.</span></span></div>
               <p v-if="!codOn && !bankOn" class="text-sm text-[#b4233c]" role="alert">No payment method is available right now. Please contact the shop.</p>
             </div>

@@ -53,7 +53,7 @@ const isFile = (v: VideoItem) => v.source === 'upload' || /\.(mp4|webm)(\?|$)/i.
 </script>
 
 <template>
-  <div data-testid="gallery">
+  <div class="mx-auto w-full max-w-[600px] lg:mx-0" data-testid="gallery">
     <div class="relative overflow-hidden rounded-[var(--radius)] bg-white shadow-[var(--shadow)]">
       <div v-if="current?.kind === 'image'" class="relative aspect-square cursor-zoom-in touch-pan-y" @pointerdown="down" @pointerup="up" @click="openZoom">
         <img

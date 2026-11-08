@@ -111,15 +111,19 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .prose-page ul, .prose-page ol { margin: .7rem 0 .7rem 1.2rem; }
 .prose-page ul { list-style: disc; } .prose-page ol { list-style: decimal; }
 .prose-page li { margin: .3rem 0; }
-.prose-page a { color: var(--c-primary-dark); text-decoration: underline; text-underline-offset: 3px; }
+.prose-page a:not(.btn) { color: var(--c-primary-dark); text-decoration: underline; text-underline-offset: 3px; }
 
 /* skeleton loaders: the same size as what they replace, so nothing jumps */
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 .skeleton { position: relative; overflow: hidden; background: color-mix(in oklab, var(--c-primary) 10%, white); border-radius: 10px; }
 .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(255 255 255 / .6), transparent); animation: shimmer 1.4s infinite; }
 
-/* the line clamp used for the two-line product description */
+/* the line clamps used for the short descriptions */
+.clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* the corner tag of a product card (Best seller, Featured, offers): a warm colour of its own, so it stands out from the price and discount labels */
+.tag-hot { background: linear-gradient(135deg, #f59e0b, #ea580c); color: #fff; box-shadow: 0 4px 12px -4px rgb(234 88 12 / .55); }
 
 /* screen-reader only */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }

@@ -4,37 +4,32 @@ import { site } from '~/config/site'
 import type { Banner, Category, Paginated, ProductCard } from '~/types'
 
 /**
- * Home: hero, trust bar, "Our Collection" (every product, most popular first; more than 12 = the first 12 and a "View all" button), a Featured section
- * (only when the shop has featured toys that are not simply the whole list), a row of categories (only when there are some) and the gift banner.
- * Everything is fetched at build time and baked into the HTML; the product cards ask for fresh prices once the page is shown.
+ * Home: hero, trust bar, "Our Collection" (the most popular products; more than 12 = the first 12 and a "View all" button), a Featured section
+ * (only when the shop has more products than the list shows), a row of categories (only when there are some) and the gift banner.
+ * Everything is fetched at build time and baked into the HTML; the page asks for fresh prices once it is shown (and not again within a minute).
+ * Only what the page shows is fetched: the first 12 products and their total, not the whole catalogue.
  */
 const { settings, storeName } = useSettings()
 const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
 
-async function allProducts(): Promise<ProductCard[]> {
-  const out: ProductCard[] = []
-  for (let page = 1; page <= 20; page++) {   // 100 a page, at most 2000 toys on the home page build
-    const res = await api<Paginated<ProductCard>>('/products', { query: { per_page: 100, page, sort: 'popularity' } })
-    out.push(...res.data)
-    if (page >= res.meta.last_page) break
-  }
-  return out
-}
-
-const { data, error, status, refresh } = await useAsyncData('home', async () => {
-  const [hero, secondary, products, featured, categories] = await Promise.all([
+const { data, error, status, refresh, refreshIfStale } = await useFastData('home', async () => {
+  const [hero, secondary, products, categories] = await Promise.all([
     api<{ data: Banner[] }>('/banners', { query: { placement: 'home_hero' } }),
     api<{ data: Banner[] }>('/banners', { query: { placement: 'home_secondary' } }),
-    allProducts(),
-    api<Paginated<ProductCard>>('/products', { query: { featured: 1, per_page: 8, sort: 'popularity' } }),
+    api<Paginated<ProductCard>>('/products', { query: { per_page: site.collection.homeLimit, page: 1, sort: 'popularity' } }),
     api<{ data: Category[] }>('/categories'),
   ])
-  return { hero: hero.data, secondary: secondary.data[0] ?? null, products, featured: featured.data, categories: categories.data }
+  // a shop with more toys than the list shows has a Featured section of its own; a small shop would only repeat the list
+  const featured = products.meta.total > products.data.length
+    ? (await api<Paginated<ProductCard>>('/products', { query: { featured: 1, per_page: 8, sort: 'popularity' } })).data
+    : []
+  return { hero: hero.data, secondary: secondary.data[0] ?? null, products: products.data, total: products.meta.total, featured, categories: categories.data }
 })
 
 const all = computed(() => data.value?.products ?? [])
+const total = computed(() => data.value?.total ?? all.value.length)
 const shown = computed(() => all.value.slice(0, site.collection.homeLimit))
-const title = computed(() => site.collection.title.replace('{count}', String(shown.value.length)))
+const title = computed(() => (shown.value.length < 3 ? site.collection.titleFew : site.collection.title.replace('{count}', String(shown.value.length))))
 // "Featured" is only worth a section when it adds something: there are featured toys and they are not exactly the list above
 const featured = computed(() => {
   const f = data.value?.featured ?? []
@@ -44,7 +39,7 @@ const featured = computed(() => {
 })
 const categories = computed(() => data.value?.categories ?? [])
 
-onMounted(() => { if (status.value === 'success') refresh() })
+onMounted(() => { if (status.value === 'success') refreshIfStale() })
 
 useSeo(() => ({
   path: '/',
@@ -67,7 +62,7 @@ useSeo(() => ({
         <ErrorState v-if="error && !all.length" :message="apiFailure(error).message" @retry="refresh()" />
         <ProductGrid v-else :products="shown" :loading="status === 'pending' && !all.length" :skeletons="8" toggle :eager-count="4" />
         <p v-if="status !== 'pending' && !error && !all.length" class="py-10 text-center text-muted">New toys are on their way. Please check back soon.</p>
-        <div v-if="all.length > shown.length" class="mt-9 text-center">
+        <div v-if="total > shown.length" class="mt-9 text-center">
           <NuxtLink to="/shop" class="btn btn-primary btn-lg" data-testid="view-all">View all products <ArrowRight :size="18" /></NuxtLink>
         </div>
       </div>

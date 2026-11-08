@@ -6,7 +6,7 @@ const slug = String(route.params.slug)
 const { storeName } = useSettings()
 
 // the category (name, text, own SEO fields) is baked in at build time; a category created after the build is loaded in the browser
-const { data, error, refresh } = await useAsyncData(`category:${slug}`, () => api<{ data: Category }>(`/categories/${slug}`).then((r) => r.data))
+const { data, error, refresh } = await useFastData(`category:${slug}`, () => api<{ data: Category }>(`/categories/${slug}`).then((r) => r.data))
 if (!data.value && error.value && apiFailure(error.value).status === 404) throw createError({ statusCode: 404, statusMessage: 'Category not found', fatal: true })
 
 const category = computed(() => data.value)
@@ -22,15 +22,10 @@ useSeo(() => ({
 
 <template>
   <div class="page-wash">
-    <div class="container-page pb-6 pt-6 sm:pt-8">
-      <ErrorState v-if="error && !category" :message="apiFailure(error).message" @retry="refresh()" />
-      <template v-else-if="category">
-        <Breadcrumbs :items="[{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }, { name: category.name }]" />
-        <h1 class="mt-3 text-3xl font-semibold sm:text-4xl">{{ category.name }}</h1>
-        <p v-if="category.description" class="mb-6 mt-2 max-w-2xl text-muted">{{ category.description }}</p>
-        <div v-else class="mb-6" />
-        <ShopListing :fixed-category="slug" />
-      </template>
-    </div>
+    <div v-if="error && !category" class="container-page pb-6 pt-8"><ErrorState :message="apiFailure(error).message" @retry="refresh()" /></div>
+    <template v-else-if="category">
+      <PageHeader :title="category.name" :subtitle="category.description || undefined" :crumbs="[{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }, { name: category.name }]" />
+      <div class="container-page pb-8 pt-7"><ShopListing :fixed-category="slug" /></div>
+    </template>
   </div>
 </template>

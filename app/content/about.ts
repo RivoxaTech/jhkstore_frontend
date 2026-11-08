@@ -26,7 +26,8 @@ const about: PageContent = {
     },
 
     { type: 'h2', text: 'Get in touch' },
-    { type: 'p', text: 'We love hearing from parents, grandparents and gift-givers. Reach us on {phone}, write to {email}, or use the contact page. {hours}' },
+    { type: 'p', text: 'We love hearing from parents, grandparents and gift-givers. Questions about a toy or an order? Reach us here:' },
+    { type: 'contact' },
     { type: 'cta', text: 'Ready to find the perfect toy?', button: 'Shop now', to: '/shop' },
   ],
 }

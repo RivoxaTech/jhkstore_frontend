@@ -11,7 +11,7 @@ export const site = {
     { label: 'Home', to: '/' },
     { label: 'Shop', to: '/shop' },
     { label: 'About', to: '/about' },
-    { label: 'Contact', to: '/contact' },
+    { label: 'Wholesale', to: '/wholesale' },
   ],
 
   /**
@@ -32,6 +32,8 @@ export const site = {
   collection: {
     label: 'Our Collection',
     title: 'Top {count} Toys for *Your Child*',
+    /** Used instead while the shop has fewer than 3 products ("Top 1 Toys" would read badly). */
+    titleFew: 'Toys for *Your Child*',
     subtitle: 'Discover our handpicked selection of educational and fun toys.',
     /** More than this many products: show the first ones and a "View all products" button. */
     homeLimit: 12,
@@ -42,7 +44,7 @@ export const site = {
       { label: 'Home', to: '/' },
       { label: 'Shop', to: '/shop' },
       { label: 'About', to: '/about' },
-      { label: 'Contact', to: '/contact' },
+      { label: 'Wholesale', to: '/wholesale' },
     ],
     support: [
       { label: 'Shipping', to: '/shipping-policy' },

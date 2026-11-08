@@ -9,7 +9,7 @@ const { money } = useMoney()
 
 async function qty(variantId: number, value: number) {
   const r = await cart.setQty(variantId, value)
-  if (!r.ok) { toast.error(r.message || 'Could not change the quantity'); await cart.refresh() }
+  if (!r.ok) { toast.error(r.message || 'Could not change the quantity'); await cart.refresh(undefined, true) }
 }
 async function remove(variantId: number) {
   const r = await cart.remove(variantId)

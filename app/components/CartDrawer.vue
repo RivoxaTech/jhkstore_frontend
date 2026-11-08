@@ -11,7 +11,7 @@ const panel = ref<HTMLElement | null>(null)
 watch(() => cart.drawerOpen.value, async (open) => {
   if (!import.meta.client) return
   document.documentElement.style.overflow = open ? 'hidden' : ''
-  if (open) { cart.refresh(); await nextTick(); panel.value?.focus() }
+  if (open) { cart.refresh(); await nextTick(); panel.value?.focus() }   // (skipped by the cart when it was read a moment ago)
 })
 watch(() => route.fullPath, () => { cart.drawerOpen.value = false })
 onBeforeUnmount(() => { if (import.meta.client) document.documentElement.style.overflow = '' })
@@ -49,8 +49,7 @@ const issue = computed(() => cart.cart.value?.issues?.[0]?.message || '')
           </div>
 
           <footer v-if="cart.cart.value && cart.lines.value.length" class="border-t border-line bg-white px-5 py-4">
-            <div class="flex items-baseline justify-between"><span class="text-sm text-muted">Subtotal</span><span class="text-xl font-bold" data-testid="drawer-subtotal">{{ money(cart.cart.value.summary.subtotal + cart.cart.value.summary.coupon_discount) }}</span></div>
-            <p class="mt-1 text-xs text-muted">Delivery and any coupon are worked out at checkout.</p>
+            <CartTotals :summary="cart.cart.value.summary" compact data-testid="drawer-totals" />
             <p v-if="!cart.cart.value.can_checkout && issue" class="mt-2 rounded-lg bg-[#fff4d6] px-3 py-2 text-xs text-[#7a5200]" role="alert">{{ issue }}</p>
             <p v-if="isClosed" class="mt-2 rounded-lg bg-[#fff4d6] px-3 py-2 text-xs text-[#7a5200]">The shop is closed right now, so orders are paused.</p>
             <div class="mt-3 grid gap-2">

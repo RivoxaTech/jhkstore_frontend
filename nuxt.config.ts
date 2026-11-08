@@ -35,10 +35,11 @@ const dynamicRoutes = [
   ...(sitemap?.categories ?? []).map((c) => `/category/${c.slug}`),
   ...(sitemap?.sub_categories ?? []).map((s) => `/category/${s.category_slug}/${s.slug}`),
 ]
-const staticRoutes = ['/', '/shop', '/about', '/contact', '/shipping-policy', '/return-policy', '/terms-and-conditions', '/privacy-policy']
+const staticRoutes = ['/', '/shop', '/about', '/wholesale', '/contact', '/shipping-policy', '/return-policy', '/terms-and-conditions', '/privacy-policy']
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-11-01',
+  ...(process.env.NUXT_BUILD_DIR ? { buildDir: process.env.NUXT_BUILD_DIR } : {}),   // only for running a second copy (tests) next to `nuxt dev`, so they do not share .nuxt
   devtools: { enabled: false },
   telemetry: false,
   ssr: true,
@@ -66,6 +67,7 @@ export default defineNuxtConfig({
     prerender: { routes: [...staticRoutes, ...dynamicRoutes], crawlLinks: true, failOnError: false },
   },
   routeRules: {
+    '/contact': { redirect: { to: '/wholesale', statusCode: 301 } },   // the old contact page is the wholesale page now
     '/cart': { ssr: false },
     '/checkout': { ssr: false },
     '/track': { ssr: false },

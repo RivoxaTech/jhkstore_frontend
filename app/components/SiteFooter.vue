@@ -57,7 +57,7 @@ const whatsapp = computed(() => settings.value?.footer.whatsapp_url)
           class="inline-flex items-center gap-2.5 self-start text-white/75 sm:self-auto" :class="agency.url ? 'hover:text-white' : ''" data-testid="agency-credit"
         >
           <span>Developed by</span>
-          <img v-if="agency.logo_url" :src="agency.logo_url" :alt="agency.name" height="26" class="h-[26px] w-auto rounded-md bg-black" loading="lazy" decoding="async">
+          <img v-if="agency.logo_url" :src="agency.logo_url" :alt="agency.name" height="26" class="h-[26px] w-auto" loading="lazy" decoding="async">
           <strong v-else class="font-semibold text-white">{{ agency.name }}</strong>
         </component>
       </div>

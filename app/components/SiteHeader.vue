@@ -2,18 +2,33 @@
 import { Menu, Search, ShoppingCart, X } from '@lucide/vue'
 import { site } from '~/config/site'
 
-/** Sticky header: logo left, the menu centred (the active page has a teal underline), search, cart. No account icon: customers have no accounts. */
+/**
+ * Sticky header: logo left, the menu centred (the active page has an underline), search, cart. No account icon: customers have no accounts.
+ * On the home page it is see-through while the page is at the top, so the hero picture runs under it, and turns solid as soon as the page is scrolled.
+ */
 const route = useRoute()
 const cart = useCart()
 const menuOpen = ref(false)
 const searchOpen = ref(false)
+const scrolled = ref(false)
 
 const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path === to || route.path.startsWith(`${to}/`))
 watch(() => route.fullPath, () => { menuOpen.value = false; searchOpen.value = false })
+
+// see-through only on the home page, at the top, with nothing open under it
+const clear = computed(() => route.path === '/' && !scrolled.value && !menuOpen.value && !searchOpen.value)
+
+function onScroll() { scrolled.value = window.scrollY > 24 }
+onMounted(() => { onScroll(); window.addEventListener('scroll', onScroll, { passive: true }) })
+onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
 </script>
 
 <template>
-  <header class="sticky top-0 z-40 border-b border-white/40 bg-white/80 backdrop-blur-md">
+  <header
+    class="sticky top-0 z-40 transition-[background-color,box-shadow,border-color] duration-200"
+    :class="clear ? 'border-b border-transparent bg-gradient-to-b from-white/75 via-white/35 to-transparent' : 'border-b border-line/70 bg-white/92 shadow-[0_6px_24px_-18px_rgb(15_23_42/0.35)] backdrop-blur-md'"
+    data-testid="site-header" :data-clear="clear"
+  >
     <div class="container-page">
       <div class="flex h-16 items-center gap-3 md:grid md:h-[76px] md:grid-cols-[1fr_auto_1fr] md:gap-6">
         <!-- phone: menu button -->

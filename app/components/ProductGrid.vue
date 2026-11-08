@@ -22,7 +22,7 @@ const { cols, set } = useGrid()
     <ul class="grid gap-3.5 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5" :class="cols === 2 ? 'grid-cols-2' : 'grid-cols-1'" data-testid="product-grid" :data-cols="cols">
       <template v-if="loading">
         <li v-for="n in skeletons ?? 8" :key="`s${n}`" class="card overflow-hidden" aria-hidden="true">
-          <div class="skeleton aspect-[5/4] rounded-none" />
+          <div class="skeleton aspect-square rounded-none" />
           <div class="space-y-2 p-3.5"><div class="skeleton h-4 w-3/4" /><div class="skeleton h-3 w-full" /><div class="skeleton h-3 w-2/3" /><div class="skeleton h-5 w-1/3" /><div class="skeleton ml-auto h-[30px] w-28 rounded-full" /></div>
         </li>
       </template>

@@ -15,6 +15,7 @@ export function useCart() {
   const busy = useState('cart-busy', () => false)
   const loadError = useState<string>('cart-error', () => '')
   const drawerOpen = useState('cart-drawer', () => false)
+  const fetchedAt = useState('cart-at', () => 0)   // when the server last answered about this cart: opening the drawer within a few seconds does not ask again
 
   const count = computed(() => cart.value?.items_count ?? 0)
   const lines = computed(() => cart.value?.items ?? [])
@@ -28,15 +29,20 @@ export function useCart() {
     const token = readToken()
     const res = await api<{ data: Cart }>(`/cart${path}`, { method, body, query, headers: token ? { 'X-Cart-Token': token } : {} })
     cart.value = res.data
+    fetchedAt.value = Date.now()
     if (res.data?.token && res.data.token !== token) saveToken(res.data.token)
     loadError.value = ''
     return res.data
   }
 
-  /** Reads the cart, but only when the browser already has a token (an empty visitor does not create a cart on the server). */
-  async function refresh(address?: { city?: string; area?: string; postcode?: string }) {
+  /**
+   * Reads the cart, but only when the browser already has a token (an empty visitor does not create a cart on the server). The answer of every
+   * add / change call already IS the latest cart, so a read within 15 seconds of it is skipped unless `force` is true.
+   */
+  async function refresh(address?: { city?: string; area?: string; postcode?: string }, force = false) {
     if (!import.meta.client) return
     if (!readToken()) { cart.value = null; return }
+    if (!force && !address && cart.value && !loadError.value && Date.now() - fetchedAt.value < 15_000) return
     loading.value = true
     try {
       const q: Record<string, string> = {}
@@ -86,7 +92,7 @@ export function useCart() {
   }
 
   /** After an order the server has already emptied the cart: just read it again. */
-  async function afterOrder() { await refresh() }
+  async function afterOrder() { await refresh(undefined, true) }
 
   return { cart, count, lines, warnings, loading, busy, loadError, drawerOpen, refresh, add, setQty, remove, applyCoupon, removeCoupon, afterOrder, token: readToken }
 }

@@ -3,7 +3,7 @@
  *
  * Placeholders in any text: {store} {email} {phone} {address} {hours} are replaced with the values of GET /settings
  * (store name, contact e-mail, phone, address, support hours). When a value is empty the sentence that holds it is
- * still readable ("our contact page" is used instead of an empty e-mail address).
+ * still readable ("our wholesale page" is used instead of an empty e-mail address).
  *
  * Sections marked EDIT PER CLIENT are the ones a client usually changes (delivery times, return window, company name).
  */
@@ -16,6 +16,8 @@ export type Block =
   | { type: 'note'; text: string }
   | { type: 'features'; items: { title: string; text: string }[] }
   | { type: 'cta'; text: string; button: string; to: string }
+  /** The phone, e-mail, address and support hours of the admin panel as small cards (only the ones the shop filled in). */
+  | { type: 'contact' }
 
 export interface PageContent {
   /** The page title and the <h1>. */

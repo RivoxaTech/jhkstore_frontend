@@ -12,7 +12,7 @@ export interface Settings {
   orders: { min_order_amount: number; cod_max_amount: number }
   payment: {
     cod: { enabled: boolean }
-    bank_transfer: { enabled: boolean; instructions: string; accounts: BankAccount[] }
+    bank_transfer: { enabled: boolean; proof_required: boolean; instructions: string; accounts: BankAccount[] }
     card: { visible: boolean; coming_soon: boolean }
   }
   theme: {

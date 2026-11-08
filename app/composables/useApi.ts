@@ -11,8 +11,11 @@ export interface ApiFailure {
   retryAfter: number | null
 }
 
+// read once (it never changes while the site runs): a call made after an `await`, where Nuxt has lost its context, can then still use it
+let base = ''
 export function apiBase(): string {
-  return String(useRuntimeConfig().public.apiBase).replace(/\/$/, '')
+  if (!base) base = String(useRuntimeConfig().public.apiBase).replace(/\/$/, '')
+  return base
 }
 
 export async function api<T = any>(path: string, options: Record<string, any> = {}): Promise<T> {
