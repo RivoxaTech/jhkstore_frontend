@@ -1,0 +1,36 @@
+<script setup lang="ts">
+import type { Category } from '~/types'
+
+const route = useRoute()
+const slug = String(route.params.slug)
+const subSlug = String(route.params.sub)
+const { storeName } = useSettings()
+
+const { data, error, refresh } = await useAsyncData(`category:${slug}`, () => api<{ data: Category }>(`/categories/${slug}`).then((r) => r.data))
+if (!data.value && error.value && apiFailure(error.value).status === 404) throw createError({ statusCode: 404, statusMessage: 'Category not found', fatal: true })
+
+const category = computed(() => data.value)
+const sub = computed(() => category.value?.sub_categories.find((s) => s.slug === subSlug))
+if (category.value && !sub.value && import.meta.server) throw createError({ statusCode: 404, statusMessage: 'Category not found', fatal: true })
+
+useSeo(() => ({
+  title: sub.value?.meta_title || (sub.value ? `${sub.value.name} (${category.value?.name})` : 'Category'),
+  description: sub.value?.meta_description || `Shop ${sub.value?.name ?? 'toys'} in ${category.value?.name ?? 'our range'} at ${storeName.value}.`,
+  path: `/category/${slug}/${subSlug}`,
+  noindex: Object.keys(route.query).length > 0,
+  jsonLd: breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }, { name: category.value?.name ?? slug, path: `/category/${slug}` }, { name: sub.value?.name ?? subSlug, path: `/category/${slug}/${subSlug}` }]),
+}))
+</script>
+
+<template>
+  <div class="page-wash">
+    <div class="container-page pb-6 pt-6 sm:pt-8">
+      <ErrorState v-if="error && !category" :message="apiFailure(error).message" @retry="refresh()" />
+      <template v-else-if="category">
+        <Breadcrumbs :items="[{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }, { name: category.name, path: `/category/${slug}` }, { name: sub?.name ?? subSlug }]" />
+        <h1 class="mb-6 mt-3 text-3xl font-semibold sm:text-4xl">{{ sub?.name ?? subSlug }}</h1>
+        <ShopListing :fixed-category="slug" :fixed-sub="subSlug" />
+      </template>
+    </div>
+  </div>
+</template>

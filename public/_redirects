@@ -1,0 +1,5 @@
+# Cloudflare Pages (ignored by hosts that do not know the file).
+# A product or category created AFTER the last build has no HTML file yet: serve the app shell, the browser then loads it from the API.
+/product/*    /200.html   200
+/category/*   /200.html   200
+/order/*      /200.html   200

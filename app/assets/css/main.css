@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. The values below are the DEFAULT theme: the real ones come from GET /settings (`theme`) and are written to :root by app.vue
+ * (baked into the HTML at build time, so there is no flash). Everything in the site uses these variables, never a fixed colour.
+ */
+:root {
+  --c-primary: #09989e;
+  --c-primary-contrast: #ffffff;
+  --c-accent: #0a9697;
+  --c-bg: #f5fbfb;
+  --c-surface: #ffffff;
+  --c-text: #15414a;
+  --c-muted: #5b7a80;
+  --c-border: #dcebee;
+  --radius: 16px;
+  --shadow: 0 6px 24px -10px rgb(4 70 76 / 0.22);
+  --font-heading: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+  /* derived: the dark footer is the primary colour darkened, the soft tints are the primary colour lightened */
+  --c-primary-dark: color-mix(in oklab, var(--c-primary) 78%, black);
+  --c-footer: color-mix(in srgb, var(--c-primary) 48%, black);
+  --c-primary-soft: color-mix(in oklab, var(--c-primary) 12%, white);
+  --c-primary-tint: color-mix(in oklab, var(--c-primary) 22%, white);
+}
+
+@theme inline {
+  --color-primary: var(--c-primary);
+  --color-primary-contrast: var(--c-primary-contrast);
+  --color-primary-dark: var(--c-primary-dark);
+  --color-primary-soft: var(--c-primary-soft);
+  --color-primary-tint: var(--c-primary-tint);
+  --color-accent: var(--c-accent);
+  --color-page: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-ink: var(--c-text);
+  --color-muted: var(--c-muted);
+  --color-line: var(--c-border);
+  --color-footer: var(--c-footer);
+  --font-heading: var(--font-heading);
+  --font-sans: var(--font-body);
+}
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: var(--font-heading); color: var(--c-text); line-height: 1.15; }
+img { max-width: 100%; }
+button, a { -webkit-tap-highlight-color: transparent; }
+
+/* keyboard focus is always visible */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--c-primary) 55%, white);
+  outline-offset: 2px;
+}
+
+.container-page { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: 16px; }
+@media (min-width: 640px) { .container-page { padding-inline: 24px; } }
+@media (min-width: 1280px) { .container-page { padding-inline: 32px; } }
+
+/* a soft page background like the design: a faint teal wash that fades out */
+.page-wash { background: linear-gradient(180deg, var(--c-primary-soft) 0, var(--c-bg) 520px); }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; border-radius: 999px; transition: background-color .15s, transform .15s, box-shadow .15s, opacity .15s; cursor: pointer; user-select: none; white-space: nowrap; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-primary { background: var(--c-primary); color: var(--c-primary-contrast); box-shadow: 0 8px 18px -10px var(--c-primary); }
+.btn-primary:hover:not(:disabled) { background: var(--c-primary-dark); }
+.btn-outline { background: var(--c-surface); color: var(--c-primary-dark); border: 1.5px solid var(--c-primary); }
+.btn-outline:hover:not(:disabled) { background: var(--c-primary-soft); }
+.btn-ghost { color: var(--c-text); }
+.btn-ghost:hover:not(:disabled) { background: var(--c-primary-soft); }
+.btn-lg { height: 48px; padding-inline: 28px; font-size: 16px; }
+.btn-md { height: 42px; padding-inline: 22px; font-size: 14.5px; }
+.btn-sm { height: 32px; padding-inline: 14px; font-size: 12.5px; }
+
+/* form controls */
+.field-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--c-text); }
+.field-input, .field-select, .field-textarea {
+  width: 100%; background: var(--c-surface); border: 1.5px solid var(--c-border); border-radius: calc(var(--radius) - 4px);
+  padding: 11px 14px; font: inherit; color: var(--c-text); transition: border-color .15s, box-shadow .15s;
+}
+.field-input::placeholder, .field-textarea::placeholder { color: color-mix(in oklab, var(--c-muted) 70%, white); }
+.field-input:hover, .field-select:hover, .field-textarea:hover { border-color: color-mix(in oklab, var(--c-primary) 40%, var(--c-border)); }
+.field-input:focus, .field-select:focus, .field-textarea:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--c-primary) 20%, transparent); }
+.field-input[aria-invalid="true"], .field-select[aria-invalid="true"] { border-color: #d6455d; }
+.field-error { color: #b4233c; font-size: 12.5px; margin-top: 4px; }
+.field-hint { color: var(--c-muted); font-size: 12.5px; margin-top: 4px; }
+
+/* cards and surfaces */
+.card { background: var(--c-surface); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card-flat { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); }
+
+/* prose for the static pages */
+.prose-page h2 { font-size: 1.35rem; font-weight: 600; margin: 2rem 0 .6rem; }
+.prose-page h3 { font-size: 1.1rem; font-weight: 600; margin: 1.4rem 0 .4rem; }
+.prose-page p { margin: .7rem 0; color: color-mix(in oklab, var(--c-text) 88%, white); }
+.prose-page ul, .prose-page ol { margin: .7rem 0 .7rem 1.2rem; }
+.prose-page ul { list-style: disc; } .prose-page ol { list-style: decimal; }
+.prose-page li { margin: .3rem 0; }
+.prose-page a { color: var(--c-primary-dark); text-decoration: underline; text-underline-offset: 3px; }
+
+/* skeleton loaders: the same size as what they replace, so nothing jumps */
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+.skeleton { position: relative; overflow: hidden; background: color-mix(in oklab, var(--c-primary) 10%, white); border-radius: 10px; }
+.skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(255 255 255 / .6), transparent); animation: shimmer 1.4s infinite; }
+
+/* the line clamp used for the two-line product description */
+.clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* screen-reader only */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* the honeypot field: out of sight and out of the tab order, but a real input (bots fill it) */
+.hp-field { position: absolute !important; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
