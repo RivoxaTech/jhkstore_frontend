@@ -47,13 +47,16 @@
   --font-sans: var(--font-body);
 }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: clip; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 body {
   margin: 0;
   background: var(--c-bg);
   color: var(--c-text);
   font-family: var(--font-body);
   font-size: 15px;
+  overflow-x: clip;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }

@@ -29,7 +29,7 @@ const canCheckout = computed(() => !!cart.cart.value?.can_checkout && !isClosed.
 <template>
   <div class="page-wash">
     <div class="container-page pb-10 pt-6 sm:pt-8">
-      <h1 class="mb-6 text-3xl font-semibold sm:text-4xl">Your cart</h1>
+      <h1 class="mx-auto mb-6 max-w-[1100px] text-3xl font-semibold sm:text-4xl">Your cart</h1>
 
       <div v-if="cart.loading.value && !cart.cart.value" class="grid gap-6 lg:grid-cols-[1fr_360px]"><div class="space-y-4"><div v-for="n in 3" :key="n" class="skeleton h-28" /></div><div class="skeleton h-64" /></div>
       <ErrorState v-else-if="cart.loadError.value && !cart.cart.value" :message="cart.loadError.value" @retry="cart.refresh()" />
@@ -41,7 +41,7 @@ const canCheckout = computed(() => !!cart.cart.value?.can_checkout && !isClosed.
         <NuxtLink to="/shop" class="btn btn-primary btn-lg mt-6">Start shopping</NuxtLink>
       </div>
 
-      <div v-else class="grid items-start gap-6 lg:grid-cols-[1fr_370px]">
+      <div v-else class="mx-auto grid max-w-[1100px] grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_370px]">
         <section class="card px-4 sm:px-6" aria-label="Items in your cart"><CartLines /></section>
 
         <aside class="card space-y-5 p-5 lg:sticky lg:top-24" aria-label="Order summary">
@@ -50,8 +50,8 @@ const canCheckout = computed(() => !!cart.cart.value?.can_checkout && !isClosed.
           <div v-if="summary">
             <form v-if="!summary.coupon_code" class="flex gap-2" @submit.prevent="apply">
               <label class="sr-only" for="coupon">Coupon code</label>
-              <input id="coupon" v-model="code" class="field-input !py-2.5 uppercase" placeholder="Coupon code" autocomplete="off" data-testid="coupon-input">
-              <button type="submit" class="btn btn-outline btn-md shrink-0" :disabled="cart.busy.value || !code.trim()" data-testid="coupon-apply">Apply</button>
+              <input id="coupon" v-model="code" class="field-input !py-1.5 !text-sm uppercase" placeholder="Coupon code" autocomplete="off" data-testid="coupon-input">
+              <button type="submit" class="btn btn-outline btn-sm !h-9 shrink-0" :disabled="cart.busy.value || !code.trim()" data-testid="coupon-apply">Apply</button>
             </form>
             <p v-else class="flex items-center justify-between rounded-xl bg-primary-soft px-3 py-2 text-sm"><span>Coupon <strong>{{ summary.coupon_code }}</strong> applied</span><button type="button" class="grid h-6 w-6 place-items-center rounded-full hover:bg-white" aria-label="Remove the coupon" @click="dropCoupon"><X :size="14" /></button></p>
             <p v-if="couponMessage" class="mt-2 text-sm text-[#b4233c]" role="alert" data-testid="coupon-error">{{ couponMessage }}</p>

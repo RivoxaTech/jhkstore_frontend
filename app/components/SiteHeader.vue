@@ -36,7 +36,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
           <X v-if="menuOpen" :size="22" /><Menu v-else :size="22" />
         </button>
 
-        <div class="flex min-w-0 flex-1 justify-center md:flex-none md:justify-start"><BrandLogo :height="52" /></div>
+        <div class="flex min-w-0 flex-1 justify-center md:flex-none md:justify-start"><BrandLogo :height="52" :mobile-height="36" /></div>
 
         <nav class="hidden items-center gap-9 md:flex" aria-label="Main">
           <NuxtLink
@@ -66,7 +66,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
     </div>
 
     <!-- phone: the menu -->
-    <nav v-if="menuOpen" id="mobile-menu" class="border-t border-line bg-white md:hidden" aria-label="Main">
+    <nav v-if="menuOpen" id="mobile-menu" class="absolute inset-x-0 top-full border-t border-line bg-white shadow-[0_18px_30px_-18px_rgb(15_23_42/0.4)] md:hidden" aria-label="Main">
       <ul class="container-page py-2">
         <li v-for="l in site.nav" :key="l.to">
           <NuxtLink :to="l.to" class="block rounded-xl px-3 py-3 text-base font-medium" :class="isActive(l.to) ? 'bg-primary-soft text-primary-dark' : 'text-ink'">{{ l.label }}</NuxtLink>

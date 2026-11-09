@@ -53,7 +53,7 @@ async function addToCart() {
         <span v-if="product.compare_price && product.compare_price > (product.price ?? 0)" class="text-[12px] text-muted line-through">{{ money(product.compare_price) }}</span>
       </div>
 
-      <div class="mt-auto flex justify-end pt-2.5">
+      <div class="mt-auto flex justify-center pt-3">
         <button
           type="button" class="btn btn-primary btn-sm !h-[30px] !px-3 text-[11.5px]" :disabled="soldOut || adding || (isClosed && !multi)" data-testid="add-to-cart"
           :aria-label="soldOut ? `Sold out, ${product.name}` : multi ? `Choose option, ${product.name}` : `Add to Cart, ${product.name}`" @click="addToCart"

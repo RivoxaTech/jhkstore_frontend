@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { Check, Headset, RefreshCw, ShieldCheck, ShoppingCart, Truck, Zap } from '@lucide/vue'
-import { site } from '~/config/site'
+import { Check, ShoppingCart, Truck, Zap } from '@lucide/vue'
 import type { Product } from '~/types'
 
 /**
@@ -8,7 +7,7 @@ import type { Product } from '~/types'
  * Product and BreadcrumbList JSON-LD) are baked into the HTML. In the browser the product is read again, so price, stock and the delivery date are current.
  * A product created after the last build has no HTML file: the same page then loads it from the API.
  */
-const trustIcons: Record<string, any> = { shield: ShieldCheck, truck: Truck, headset: Headset, refresh: RefreshCw }
+
 const route = useRoute()
 const slug = String(route.params.slug)
 const { money } = useMoney()
@@ -103,7 +102,7 @@ const crumbs = computed(() => [{ name: 'Home', path: '/' }, ...(product.value?.b
 
 <template>
   <div class="page-wash">
-    <div class="container-page pb-28 pt-6 sm:pt-8 lg:pb-16">
+    <div class="container-page pb-12 pt-6 sm:pt-8 lg:pb-16">
       <ErrorState v-if="error && !product" :message="apiFailure(error).message" @retry="refresh()" />
       <div v-else-if="!product && status === 'pending'" class="grid gap-8 lg:grid-cols-2"><div class="skeleton aspect-square" /><div class="space-y-4"><div class="skeleton h-9 w-3/4" /><div class="skeleton h-5 w-full" /><div class="skeleton h-10 w-1/3" /><div class="skeleton h-12 w-full" /></div></div>
 
@@ -154,16 +153,14 @@ const crumbs = computed(() => [{ name: 'Home', path: '/' }, ...(product.value?.b
               <p v-if="nextTier" class="mt-1.5 text-xs text-primary-dark">Add {{ nextTier.min_qty - qty }} more to pay {{ money(nextTier.price) }} each.</p>
             </div>
 
-            <!-- quantity and the two buttons on one row (phone: quantity above, the sticky bar below has Add to Cart) -->
-            <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div v-if="!soldOut" class="flex items-center gap-3">
-                <QuantityStepper v-model="qty" :min="minQty" :max="maxQty" :label="`Quantity of ${product.name}`" />
-                <span v-if="minQty > 1" class="text-xs text-muted">Minimum {{ minQty }}</span>
-              </div>
-              <div class="hidden flex-1 gap-3 sm:flex">
-                <button type="button" class="btn btn-primary btn-lg flex-1" :disabled="soldOut || adding || isClosed" data-testid="add-to-cart" @click="add(false)"><ShoppingCart :size="18" /> {{ adding ? 'Adding...' : 'Add to Cart' }}</button>
-                <button type="button" class="btn btn-outline btn-lg flex-1" :disabled="soldOut || adding || isClosed" data-testid="buy-now" @click="add(true)"><Zap :size="18" /> Buy Now</button>
-              </div>
+            <!-- the quantity on its own row, then Add to Cart and Buy Now side by side (the same on a phone and on a desktop) -->
+            <div v-if="!soldOut" class="mt-6 flex items-center gap-3">
+              <QuantityStepper v-model="qty" :min="minQty" :max="maxQty" :label="`Quantity of ${product.name}`" />
+              <span v-if="minQty > 1" class="text-xs text-muted">Minimum {{ minQty }}</span>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-3">
+              <button type="button" class="btn btn-primary btn-lg !px-3 sm:!px-6" :disabled="soldOut || adding || isClosed" data-testid="add-to-cart" @click="add(false)"><ShoppingCart :size="18" class="shrink-0" /> <span class="truncate">{{ adding ? 'Adding...' : 'Add to Cart' }}</span></button>
+              <button type="button" class="btn btn-outline btn-lg !px-3 sm:!px-6" :disabled="soldOut || adding || isClosed" data-testid="buy-now" @click="add(true)"><Zap :size="18" class="shrink-0" /> <span class="truncate">Buy Now</span></button>
             </div>
             <p v-if="addError" class="mt-3 text-sm text-[#b4233c]" role="alert" data-testid="add-error">{{ addError }}</p>
             <p v-if="isClosed" class="mt-3 rounded-xl bg-[#fff4d6] px-4 py-2.5 text-sm text-[#7a5200]">The shop is closed right now, so orders are paused.</p>
@@ -173,9 +170,7 @@ const crumbs = computed(() => [{ name: 'Home', path: '/' }, ...(product.value?.b
               <li v-if="arrives && !soldOut" class="flex items-center gap-2.5 rounded-xl bg-primary-soft/70 px-3.5 py-2.5" data-testid="delivery-estimate"><Truck :size="18" class="shrink-0 text-primary" /><span>Arrives by <strong>{{ arrives }}</strong> <span class="text-muted">(estimate)</span></span></li>
               <li v-if="product.sku && variant" class="px-1 text-xs text-muted">SKU: {{ variant.sku || product.sku }}</li>
             </ul>
-            <ul class="mt-4 grid grid-cols-2 gap-2.5 border-t border-line pt-4" data-testid="product-trust">
-              <li v-for="t in site.trust" :key="t.title" class="flex items-center gap-2.5 text-[13px]"><component :is="trustIcons[t.icon] ?? ShieldCheck" :size="20" :stroke-width="1.7" class="shrink-0 text-primary" aria-hidden="true" /><span class="min-w-0 leading-tight"><span class="block font-semibold">{{ t.title }}</span><span class="block text-xs text-muted">{{ t.text }}</span></span></li>
-            </ul>
+
           </section>
         </div>
 
@@ -186,13 +181,6 @@ const crumbs = computed(() => [{ name: 'Home', path: '/' }, ...(product.value?.b
           <ProductGrid :products="product.related.slice(0, 4)" />
         </section>
 
-        <!-- phone: the Add to Cart bar stays in reach -->
-        <div v-if="!soldOut" class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 py-3 backdrop-blur sm:hidden" data-testid="sticky-atc">
-          <div class="flex items-center gap-3">
-            <div class="min-w-0"><p class="text-lg font-bold leading-none">{{ money(variant?.price ?? product.price) }}</p><p class="mt-0.5 text-[11px] text-muted">Qty {{ qty }}</p></div>
-            <button type="button" class="btn btn-primary btn-md flex-1" :disabled="adding || isClosed" data-testid="sticky-add" @click="add(false)"><ShoppingCart :size="17" /> Add to Cart</button>
-          </div>
-        </div>
       </template>
     </div>
   </div>

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Clock, LoaderCircle, Mail, MapPin, MessageCircle, Phone, Send } from '@lucide/vue'
+import { LoaderCircle, Send } from '@lucide/vue'
 import type { Paginated, ProductCard } from '~/types'
 
 /**
- * Wholesale (this is also the site's contact page): the ONE form of the site, a bulk / wholesale enquiry (POST /wholesale-requests, honeypot included), and next to
- * it the contact details from the admin panel (phone, e-mail, address, support hours, WhatsApp, social links). There is no other contact form.
+ * Wholesale (this is also the site's contact page): the ONE form of the site, a bulk / wholesale enquiry (POST /wholesale-requests, honeypot included),
+ * centred on the page. There is no other contact form.
  */
-const { settings, store, storeName } = useSettings()
+const { storeName } = useSettings()
 useSeo(() => ({
   title: 'Wholesale',
-  description: `Wholesale and bulk orders at ${storeName.value}: tell us what you need and we will send you a price. Phone, e-mail and WhatsApp too.`,
+  description: `Wholesale and bulk orders at ${storeName.value}: tell us what you need and we will send you a price.`,
   path: '/wholesale',
   jsonLd: breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Wholesale', path: '/wholesale' }]),
 }))
@@ -59,23 +59,8 @@ async function submit() {
   <div class="page-wash">
     <PageHeader title="Wholesale" subtitle="Buying for a shop, a school or an event? Tell us what you need and we will send you a price." :crumbs="[{ name: 'Home', path: '/' }, { name: 'Wholesale' }]" center />
     <div class="container-page pb-6 pt-8 sm:pt-12">
-      <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
-        <section class="card order-2 space-y-5 p-6 lg:sticky lg:top-24 lg:order-2" aria-labelledby="details-h" data-testid="contact-details">
-          <h2 id="details-h" class="text-lg font-semibold">Get in touch</h2>
-          <p v-if="!store?.phone && !store?.email && !store?.address && !settings?.footer.support_hours && !settings?.footer.whatsapp_url" class="text-sm text-muted">Send the enquiry form and we will get back to you.</p>
-          <ul class="space-y-4 text-[15px]">
-            <li v-if="store?.phone" class="flex gap-3"><Phone :size="19" class="mt-0.5 shrink-0 text-primary" /><div><p class="text-xs font-semibold uppercase tracking-wide text-muted">Phone</p><a :href="`tel:${store.phone}`" class="font-medium hover:text-primary-dark">{{ store.phone }}</a></div></li>
-            <li v-if="store?.email" class="flex gap-3"><Mail :size="19" class="mt-0.5 shrink-0 text-primary" /><div><p class="text-xs font-semibold uppercase tracking-wide text-muted">E-mail</p><a :href="`mailto:${store.email}`" class="font-medium hover:text-primary-dark">{{ store.email }}</a></div></li>
-            <li v-if="store?.address" class="flex gap-3"><MapPin :size="19" class="mt-0.5 shrink-0 text-primary" /><div><p class="text-xs font-semibold uppercase tracking-wide text-muted">Address</p><p class="whitespace-pre-line font-medium">{{ store.address }}</p></div></li>
-            <li v-if="settings?.footer.support_hours" class="flex gap-3"><Clock :size="19" class="mt-0.5 shrink-0 text-primary" /><div><p class="text-xs font-semibold uppercase tracking-wide text-muted">Support hours</p><p class="font-medium">{{ settings.footer.support_hours }}</p></div></li>
-          </ul>
-          <a v-if="settings?.footer.whatsapp_url" :href="settings.footer.whatsapp_url" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-md w-full" data-testid="whatsapp-button"><MessageCircle :size="18" /> Chat on WhatsApp</a>
-          <ul v-if="settings?.social_links.length" class="flex flex-wrap gap-2 border-t border-line pt-4" aria-label="Social media">
-            <li v-for="l in settings.social_links" :key="l.url"><a :href="l.url" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 rounded-full bg-primary-soft px-3.5 py-1.5 text-sm font-medium text-primary-dark hover:bg-primary hover:text-primary-contrast"><SocialIcon :platform="l.platform" :size="15" /> {{ l.label }}</a></li>
-          </ul>
-        </section>
-
-        <section class="card order-1 p-6 sm:p-8 lg:order-1" aria-labelledby="bulk-h">
+      <div class="mx-auto max-w-3xl">
+        <section class="card p-5 sm:p-8" aria-labelledby="bulk-h">
           <h2 id="bulk-h" class="text-xl font-semibold">Bulk &amp; wholesale enquiries</h2>
           <p class="mt-1 text-sm text-muted">Tell us what you need and how many. We will call you back with a price.</p>
 

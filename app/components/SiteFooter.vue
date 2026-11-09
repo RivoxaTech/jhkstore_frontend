@@ -49,15 +49,15 @@ const whatsapp = computed(() => settings.value?.footer.whatsapp_url)
         </div>
       </div>
 
-      <div class="flex flex-col gap-3 border-t border-white/15 py-5 text-[13px] text-white/75 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col items-center gap-3 border-t border-white/15 py-6 text-center text-[13px] text-white/75">
         <p>{{ copyright }}</p>
         <!-- "Developed by": name, link and logo come from Settings → Footer & Social of the admin panel (no name = no credit) -->
         <component
           :is="agency.url ? 'a' : 'span'" v-if="agency.name" :href="agency.url || undefined" :target="agency.url ? '_blank' : undefined" :rel="agency.url ? 'noopener noreferrer' : undefined"
-          class="inline-flex items-center gap-2.5 self-start text-white/75 sm:self-auto" :class="agency.url ? 'hover:text-white' : ''" data-testid="agency-credit"
+          class="inline-flex items-center gap-2.5 text-white/75" :class="agency.url ? 'hover:text-white' : ''" data-testid="agency-credit"
         >
           <span>Developed by</span>
-          <img v-if="agency.logo_url" :src="agency.logo_url" :alt="agency.name" height="26" class="h-[26px] w-auto" loading="lazy" decoding="async">
+          <img v-if="agency.logo_url" :src="agency.logo_url" :alt="agency.name" height="26" class="h-[28px] w-auto" loading="lazy" decoding="async">
           <strong v-else class="font-semibold text-white">{{ agency.name }}</strong>
         </component>
       </div>

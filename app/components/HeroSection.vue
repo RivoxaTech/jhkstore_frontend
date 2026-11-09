@@ -57,7 +57,7 @@ const isExternal = (l: string) => /^https?:\/\//i.test(l)
         <picture v-if="s.image" class="absolute inset-x-0 bottom-0 top-[42%] -z-10 sm:inset-0">
           <source v-if="s.mobile" media="(max-width: 639px)" :srcset="s.mobile">
           <img
-            :src="s.image" alt="" width="1259" height="650" class="h-full w-full origin-[85%_40%] scale-100 object-cover object-[70%_70%] sm:object-[88%_40%] lg:scale-[1.06]" :loading="i === 0 ? 'eager' : 'lazy'"
+            :src="s.image" alt="" width="1259" height="650" class="h-full w-full origin-[85%_72%] scale-100 object-cover object-[70%_70%] sm:object-[88%_72%] lg:scale-[1.06]" :loading="i === 0 ? 'eager' : 'lazy'"
             :fetchpriority="i === 0 ? 'high' : 'low'" decoding="async"
           >
         </picture>

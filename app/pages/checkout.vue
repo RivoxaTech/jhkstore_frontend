@@ -188,14 +188,14 @@ const showProofError = computed(() => (touched.value && errors.value.proof) || p
 <template>
   <div class="page-wash">
     <div class="container-page pb-12 pt-6 sm:pt-8">
-      <h1 class="mb-6 text-3xl font-semibold sm:text-4xl">Checkout</h1>
+      <h1 class="mx-auto mb-6 max-w-[1100px] text-3xl font-semibold sm:text-4xl">Checkout</h1>
 
       <div v-if="empty && !cart.loading.value" class="card mx-auto max-w-lg px-6 py-14 text-center" data-testid="checkout-empty">
         <p class="text-xl font-semibold">Your cart is empty</p><p class="mt-1 text-muted">Add a toy to your cart to check out.</p>
         <NuxtLink to="/shop" class="btn btn-primary btn-lg mt-6">Start shopping</NuxtLink>
       </div>
 
-      <form v-else class="grid items-start gap-6 lg:grid-cols-[1fr_390px]" novalidate data-testid="checkout-form" @submit.prevent="place(false)">
+      <form v-else class="mx-auto grid max-w-[1100px] grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_390px]" novalidate data-testid="checkout-form" @submit.prevent="place(false)">
         <div class="space-y-6">
           <!-- what went wrong, in plain words -->
           <div v-if="closed" class="flex gap-2 rounded-2xl bg-[#fff4d6] px-4 py-3 text-sm text-[#7a5200]" role="alert" data-testid="closed-notice"><TriangleAlert :size="18" class="mt-0.5 shrink-0" /><span>{{ settings?.store.closed_message || 'The shop is closed right now, so we cannot take orders. You can still look around.' }}</span></div>
@@ -307,8 +307,8 @@ const showProofError = computed(() => (touched.value && errors.value.proof) || p
 
           <div>
             <form v-if="!summary?.coupon_code" class="flex gap-2" @submit.prevent="applyCoupon">
-              <label class="sr-only" for="coupon">Coupon code</label><input id="coupon" v-model="couponCode" class="field-input !py-2.5 uppercase" placeholder="Coupon code" autocomplete="off" data-testid="coupon-input">
-              <button type="submit" class="btn btn-outline btn-md shrink-0" :disabled="cart.busy.value || !couponCode.trim()" data-testid="coupon-apply">Apply</button>
+              <label class="sr-only" for="coupon">Coupon code</label><input id="coupon" v-model="couponCode" class="field-input !py-1.5 !text-sm uppercase" placeholder="Coupon code" autocomplete="off" data-testid="coupon-input">
+              <button type="submit" class="btn btn-outline btn-sm !h-9 shrink-0" :disabled="cart.busy.value || !couponCode.trim()" data-testid="coupon-apply">Apply</button>
             </form>
             <p v-else class="flex items-center justify-between rounded-xl bg-primary-soft px-3 py-2 text-sm"><span>Coupon <strong>{{ summary.coupon_code }}</strong> applied</span><button type="button" class="text-xs font-semibold underline" @click="dropCoupon">Remove</button></p>
             <p v-if="couponMessage" class="mt-2 text-sm text-[#b4233c]" role="alert" data-testid="coupon-error">{{ couponMessage }}</p>

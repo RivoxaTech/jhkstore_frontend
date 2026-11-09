@@ -16,7 +16,7 @@ const rows = (s: string | null) => lines(s).map((l) => l.split('|').map((c) => c
 
 <template>
   <section v-if="list.length" aria-label="Product details" data-testid="content-tabs">
-    <div class="flex gap-1 overflow-x-auto border-b border-line" role="tablist">
+    <div class="no-scrollbar flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line" role="tablist">
       <button
         v-for="(t, i) in list" :key="t.key" :id="`tab-${t.key}`" type="button" role="tab" class="relative whitespace-nowrap px-4 py-3 text-sm font-semibold transition-colors" :class="i === active ? 'text-primary-dark' : 'text-muted hover:text-ink'"
         :aria-selected="i === active" :aria-controls="`panel-${t.key}`" @click="active = i"

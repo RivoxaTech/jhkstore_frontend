@@ -132,7 +132,7 @@ try {
     check((await text(page, '[data-testid="hero"] h1')).includes('Bright Futures') && await page.$eval('[data-testid="hero"] h1 span', (e) => getComputedStyle(e).color !== getComputedStyle(e.parentElement).color), 'S1 home: *asterisk* words of the banner title are in the accent colour')
     check((await count(page, '[data-testid="trust-bar"] li')) === 4, 'S1 home: the trust bar has four items')
     check(/PLAY\s•\sLEARN\s•\sGROW/.test(await page.$eval('[data-testid="hero"]', (e) => e.innerText)), 'S1 home: the eyebrow is the store tagline with dots (PLAY • LEARN • GROW)')
-    check(await exists(page, '[data-testid="featured"]') && await exists(page, '[data-testid="categories-row"]') && await exists(page, '[data-testid="gift-banner"]'), 'S1 home: Featured (featured toys differ from the list), the category row and the gift banner')
+    check(await exists(page, '[data-testid="featured"]') && !(await exists(page, '[data-testid="categories-row"]')) && await exists(page, '[data-testid="gift-banner"]'), 'S1 home: Featured (featured toys differ from the list) and the gift banner, and no "Shop by category" row')
     // everything the admin panel controls comes from the API, nothing is fixed in the storefront
     const pub = (await api('GET', 'store/settings')).json
     const themeNow = await page.evaluate(() => { const s = getComputedStyle(document.documentElement); return { primary: s.getPropertyValue('--c-primary').trim(), accent: s.getPropertyValue('--c-accent').trim(), bg: s.getPropertyValue('--c-bg').trim(), text: s.getPropertyValue('--c-text').trim() } })
@@ -226,11 +226,16 @@ try {
     }
     check(castle !== undefined && problems.length === 0, 'S3 product: no script errors', problems)
 
-    // phone: the sticky Add to Cart bar
+    // phone: no sticky bar; the quantity, then Add to Cart and Buy Now side by side in the page itself
     await page.setViewport({ width: 390, height: 800 })
     await go(page, '/product/rainbow-stacking-blocks')
-    const sticky = await page.$eval('[data-testid="sticky-atc"]', (e) => { const r = e.getBoundingClientRect(); return { visible: getComputedStyle(e).display !== 'none', bottom: Math.round(window.innerHeight - r.bottom) } })
-    check(sticky.visible && sticky.bottom === 0, 'S3 product (phone): the Add to Cart bar sticks to the bottom', sticky)
+    check(!(await exists(page, '[data-testid="sticky-atc"]')), 'S3 product (phone): there is no fixed Add to Cart bar')
+    const row = await page.evaluate(() => { const a = document.querySelector('[data-testid="add-to-cart"]').getBoundingClientRect(); const b = document.querySelector('[data-testid="buy-now"]').getBoundingClientRect(); const q = document.querySelector('[data-testid="qty-input"]').getBoundingClientRect(); return { sameRow: Math.abs(a.top - b.top) < 2, below: a.top > q.bottom - 1, iw: window.innerWidth, right: Math.round(b.right) } })
+    check(row.sameRow && row.below && row.right <= row.iw, 'S3 product (phone): Add to Cart and Buy Now are in one row, under the quantity', row)
+    await page.setViewport({ width: 1440, height: 900 })
+    await go(page, '/product/rainbow-stacking-blocks')
+    const rowD = await page.evaluate(() => { const a = document.querySelector('[data-testid="add-to-cart"]').getBoundingClientRect(); const b = document.querySelector('[data-testid="buy-now"]').getBoundingClientRect(); const q = document.querySelector('[data-testid="qty-input"]').getBoundingClientRect(); return { sameRow: Math.abs(a.top - b.top) < 2, below: a.top > q.bottom - 1 } })
+    check(rowD.sameRow && rowD.below, 'S3 product (desktop): the same, quantity row first, then the two buttons in one row', rowD)
     await page.__ctx.close()
   }
 
@@ -383,7 +388,9 @@ try {
   {
     const { page } = await open()
     await go(page, '/wholesale')
-    check(await exists(page, '[data-testid="contact-details"]') && await exists(page, '[data-testid="whatsapp-button"]') && /Bulk & wholesale enquiries/i.test(await page.evaluate(() => document.body.innerText)), 'S9 wholesale: details from the settings, a WhatsApp button and "Bulk & wholesale enquiries"')
+    check(!(await exists(page, '[data-testid="contact-details"]')) && /Bulk & wholesale enquiries/i.test(await page.evaluate(() => document.body.innerText)), 'S9 wholesale: only the enquiry form (no "Get in touch" card)')
+    const formBox = await page.$eval('[data-testid="bulk-form"]', (e) => { const r = e.getBoundingClientRect(); return { left: Math.round(r.left), right: Math.round(window.innerWidth - r.right) } })
+    check(Math.abs(formBox.left - formBox.right) <= 2, 'S9 wholesale: the form is centred on the page', formBox)
     await click(page, '[data-testid="bulk-submit"]'); await sleep(300)
     check(await exists(page, '[aria-invalid="true"]'), 'S9 wholesale: an empty enquiry is not sent')
     await fill(page, '[data-testid="b-name"]', 'Bulk Buyer'); await fill(page, '[data-testid="b-phone"]', randomPhone())
@@ -490,7 +497,7 @@ try {
     check(outdoor > 0 && outdoor < catalogue.length && /Outdoor Play/.test(await text(page, 'h1')), 'S13 category: only the products of the category', outdoor)
     check(/Ride-ons|Sand & Water/.test(await text(page, '[data-testid="category-chips"]')), 'S13 category: its sub-categories are listed as chips')
     await go(page, '/category/arts-crafts')
-    check(!/Sub|Ride-ons/.test(await text(page, '[data-testid="filters"]').catch(() => '')) || true, 'S13 category: (Arts & Crafts has no sub-categories)')
+
     await go(page, '/shop?sort=price_asc')
     const prices = await page.$$eval('[data-testid="product-card"]', (cards) => cards.slice(0, 6).map((c) => Number((c.innerText.match(/Rs\.\s?([\d,]+)/) || [])[1]?.replace(/,/g, '')) || 0))
     check(prices.every((p, i) => i === 0 || p >= prices[i - 1]), 'S13 shop: sort by price, low to high', prices)
@@ -561,9 +568,9 @@ try {
     const desc = await page.$$eval('[data-testid="card-description"]', (els) => els.map((e) => e.getBoundingClientRect().height))
     check(desc.length > 0 && desc.every((h) => h <= 20), 'S17 cards: the description of a product card is one line', Math.max(...desc))
     await go(page, '/shop')
-    check(await exists(page, '[data-testid="category-chips"]') && await exists(page, '[data-testid="shop-search"]') && await exists(page, '[data-testid="filters"]'), 'S17 shop: category chips, a search box and the price / stock filters')
-    const filtersShown = await page.$eval('[data-testid="filters"]', (e) => e.getBoundingClientRect().width > 0)
-    check(filtersShown, 'S17 shop: the filters are visible on a desktop screen')
+    check(await exists(page, '[data-testid="category-chips"]') && await exists(page, '[data-testid="sort"]') && !(await exists(page, '[data-testid="shop-search"]')) && !(await exists(page, '[data-testid="min-price"]')) && !(await exists(page, '[data-testid="in-stock"]')), 'S17 shop: category chips and the sort; no second search box, price range or in-stock box')
+    const oneLine = await page.evaluate(() => Math.abs(document.querySelector('[data-testid="result-count"]').getBoundingClientRect().top - document.querySelector('[data-testid="sort"]').getBoundingClientRect().top) < 30)
+    check(oneLine, 'S17 shop: the number of toys and the sort are on one line')
     await go(page, '/wholesale')
     check(/Wholesale/.test(await text(page, 'h1')) && await exists(page, '[data-testid="bulk-form"]'), 'S17 wholesale: the page is called Wholesale and has the enquiry form')
     check(await page.$$eval('nav[aria-label="Main"] a', (as) => as.some((a) => a.getAttribute('href') === '/wholesale') && !as.some((a) => a.getAttribute('href') === '/contact')), 'S17 wholesale: the menu has Wholesale and no Contact')
