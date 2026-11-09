@@ -28,8 +28,8 @@ const canCheckout = computed(() => !!cart.cart.value?.can_checkout && !isClosed.
 
 <template>
   <div class="page-wash">
-    <div class="container-page pb-10 pt-6 sm:pt-8">
-      <h1 class="mx-auto mb-6 max-w-[1100px] text-3xl font-semibold sm:text-4xl">Your cart</h1>
+    <PageHeader title="Your cart" :crumbs="[{ name: 'Home', path: '/' }, { name: 'Cart' }]" />
+    <div class="container-page pb-10 pt-7">
 
       <div v-if="cart.loading.value && !cart.cart.value" class="grid gap-6 lg:grid-cols-[1fr_360px]"><div class="space-y-4"><div v-for="n in 3" :key="n" class="skeleton h-28" /></div><div class="skeleton h-64" /></div>
       <ErrorState v-else-if="cart.loadError.value && !cart.cart.value" :message="cart.loadError.value" @retry="cart.refresh()" />

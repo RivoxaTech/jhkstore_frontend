@@ -16,9 +16,8 @@ function onUpdated(order: Order) { if (found.value) { found.value = { ...found.v
 
 <template>
   <div class="page-wash">
-    <div class="container-page pb-10 pt-6 sm:pt-10">
-      <h1 class="mb-2 text-center text-3xl font-semibold sm:text-4xl">Track your order</h1>
-      <p class="mx-auto mb-8 max-w-md text-center text-muted">Enter your order number and the phone number you used when you ordered.</p>
+    <PageHeader title="Track your order" subtitle="Enter your order number and the phone number you used when you ordered." :crumbs="[{ name: 'Home', path: '/' }, { name: 'Track your order' }]" />
+    <div class="container-page pb-10 pt-8">
       <TrackForm v-if="!found" :initial-number="initial" @found="onFound" />
       <div v-else>
         <div class="mb-5 text-center"><button type="button" class="text-sm font-semibold text-primary-dark underline" @click="found = null">Track another order</button></div>

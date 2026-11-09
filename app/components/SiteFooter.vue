@@ -45,11 +45,15 @@ const whatsapp = computed(() => settings.value?.footer.whatsapp_url)
               <a :href="whatsapp" target="_blank" rel="noopener noreferrer" class="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/25" aria-label="WhatsApp"><SocialIcon platform="whatsapp" /></a>
             </li>
           </ul>
-          <p v-if="store?.email" class="mt-4 text-sm text-white/70"><a :href="`mailto:${store.email}`" class="hover:text-white hover:underline">{{ store.email }}</a></p>
+          <ul v-if="store?.email || store?.phone || settings?.footer.support_hours" class="mt-4 space-y-1 text-sm text-white/70">
+            <li v-if="store?.phone"><a :href="`tel:${store.phone}`" class="hover:text-white hover:underline">{{ store.phone }}</a></li>
+            <li v-if="store?.email"><a :href="`mailto:${store.email}`" class="hover:text-white hover:underline">{{ store.email }}</a></li>
+            <li v-if="settings?.footer.support_hours">{{ settings.footer.support_hours }}</li>
+          </ul>
         </div>
       </div>
 
-      <div class="flex flex-col items-center gap-3 border-t border-white/15 py-6 text-center text-[13px] text-white/75">
+      <div class="flex flex-col items-center gap-3 border-t border-white/15 py-5 text-center text-[13px] text-white/75 sm:flex-row sm:justify-between sm:text-left">
         <p>{{ copyright }}</p>
         <!-- "Developed by": name, link and logo come from Settings → Footer & Social of the admin panel (no name = no credit) -->
         <component

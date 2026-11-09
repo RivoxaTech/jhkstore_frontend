@@ -57,7 +57,7 @@ async function submit() {
 
 <template>
   <div class="page-wash">
-    <PageHeader title="Wholesale" subtitle="Buying for a shop, a school or an event? Tell us what you need and we will send you a price." :crumbs="[{ name: 'Home', path: '/' }, { name: 'Wholesale' }]" center />
+    <PageHeader title="Wholesale" subtitle="Buying for a shop, a school or an event? Tell us what you need and we will send you a price." :crumbs="[{ name: 'Home', path: '/' }, { name: 'Wholesale' }]" />
     <div class="container-page pb-6 pt-8 sm:pt-12">
       <div class="mx-auto max-w-3xl">
         <section class="card p-5 sm:p-8" aria-labelledby="bulk-h">

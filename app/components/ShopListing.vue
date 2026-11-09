@@ -97,20 +97,18 @@ defineExpose({ total })
     </nav>
 
     <!-- the number of toys and the sort, on one line -->
-    <div class="mt-4 flex items-center justify-between gap-3 border-y border-line/80 py-3">
+    <div class="mt-4 flex items-center justify-between gap-2 border-y border-line/80 py-2.5">
       <p class="text-sm text-muted" data-testid="result-count" aria-live="polite"><template v-if="status === 'pending'">Loading...</template><template v-else><strong class="text-ink">{{ total }}</strong> {{ total === 1 ? 'toy' : 'toys' }}<template v-if="q"> for "{{ q }}"</template></template></p>
-      <div class="flex items-center gap-2">
-        <label class="text-sm font-semibold" for="sort">Sort</label>
-        <select id="sort" class="field-select !w-auto !rounded-full !py-1.5 text-sm" :value="sort" data-testid="sort" @change="setSort(($event.target as HTMLSelectElement).value)">
-          <option v-for="s in SORTS" :key="s.value" :value="s.value">{{ s.label }}</option>
-        </select>
+      <div class="flex items-center gap-1.5">
+        <GridToggle />
+        <SortMenu :model-value="sort" :options="SORTS" @update:model-value="setSort" />
       </div>
     </div>
 
     <div class="mt-6 min-w-0">
       <ErrorState v-if="error && !products.length" :message="apiFailure(error).message" @retry="refresh()" />
       <template v-else>
-        <ProductGrid :products="products" :loading="status === 'pending' && !products.length" :skeletons="8" toggle :eager-count="4" />
+        <ProductGrid :products="products" :loading="status === 'pending' && !products.length" :skeletons="8" :eager-count="4" />
         <div v-if="status !== 'pending' && !products.length" class="card px-6 py-14 text-center" data-testid="no-results">
           <p class="text-lg font-semibold">No toys found</p>
           <p class="mt-1 text-sm text-muted">Try another category or search.</p>

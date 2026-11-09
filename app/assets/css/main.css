@@ -65,10 +65,15 @@ img { max-width: 100%; }
 button, a { -webkit-tap-highlight-color: transparent; }
 
 /* keyboard focus is always visible */
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid color-mix(in oklab, var(--c-primary) 55%, white);
-  outline-offset: 2px;
+@layer base {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid color-mix(in oklab, var(--c-primary) 55%, white);
+    outline-offset: 2px;
+  }
 }
+/* the header: no hard outline (the search box has its own soft ring); keyboard focus on its buttons and links is a thin ring */
+[data-testid="site-header"] :focus-visible { outline: none; box-shadow: 0 0 0 2px color-mix(in oklab, var(--c-primary) 40%, transparent); border-radius: 999px; }
+[data-testid="site-header"] input:focus-visible { box-shadow: none; border-radius: 0; }
 
 .container-page { width: 100%; max-width: 1400px; margin-inline: auto; padding-inline: 16px; }
 @media (min-width: 640px) { .container-page { padding-inline: 24px; } }

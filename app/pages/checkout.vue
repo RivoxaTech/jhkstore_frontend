@@ -187,8 +187,8 @@ const showProofError = computed(() => (touched.value && errors.value.proof) || p
 
 <template>
   <div class="page-wash">
-    <div class="container-page pb-12 pt-6 sm:pt-8">
-      <h1 class="mx-auto mb-6 max-w-[1100px] text-3xl font-semibold sm:text-4xl">Checkout</h1>
+    <PageHeader title="Checkout" :crumbs="[{ name: 'Home', path: '/' }, { name: 'Checkout' }]" />
+    <div class="container-page pb-12 pt-7">
 
       <div v-if="empty && !cart.loading.value" class="card mx-auto max-w-lg px-6 py-14 text-center" data-testid="checkout-empty">
         <p class="text-xl font-semibold">Your cart is empty</p><p class="mt-1 text-muted">Add a toy to your cart to check out.</p>

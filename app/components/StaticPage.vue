@@ -48,7 +48,7 @@ useSeo(() => ({
 
 <template>
   <div class="page-wash">
-    <PageHeader :title="content.title" :subtitle="content.lead ? fill(content.lead) : undefined" :crumbs="[{ name: 'Home', path: '/' }, { name: content.title }]" center />
+    <PageHeader :title="content.title" :subtitle="content.lead ? fill(content.lead) : undefined" :crumbs="[{ name: 'Home', path: '/' }, { name: content.title }]" />
 
     <div class="container-page pb-4 pt-10 sm:pt-14">
       <article class="mx-auto max-w-5xl divide-y divide-line/70">

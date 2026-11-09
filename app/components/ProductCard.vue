@@ -14,6 +14,7 @@ const cart = useCart()
 const toast = useToast()
 const { isClosed } = useSettings()
 const adding = ref(false)
+const grid = useGrid()
 
 const href = computed(() => `/product/${props.product.slug}`)
 const soldOut = computed(() => props.product.is_sold_out || !props.product.in_stock)
@@ -53,7 +54,7 @@ async function addToCart() {
         <span v-if="product.compare_price && product.compare_price > (product.price ?? 0)" class="text-[12px] text-muted line-through">{{ money(product.compare_price) }}</span>
       </div>
 
-      <div class="mt-auto flex justify-center pt-3">
+      <div class="mt-auto flex pt-3" :class="grid.cols.value === 2 ? 'justify-center sm:justify-end' : 'justify-end'">
         <button
           type="button" class="btn btn-primary btn-sm !h-[30px] !px-3 text-[11.5px]" :disabled="soldOut || adding || (isClosed && !multi)" data-testid="add-to-cart"
           :aria-label="soldOut ? `Sold out, ${product.name}` : multi ? `Choose option, ${product.name}` : `Add to Cart, ${product.name}`" @click="addToCart"

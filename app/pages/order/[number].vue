@@ -29,13 +29,10 @@ function onUpdated(order: Order) { if (state.value) { state.value = { ...state.v
 
 <template>
   <div class="page-wash">
-    <div class="container-page pb-10 pt-6 sm:pt-10">
+    <PageHeader :title="`Your order ${number}`" :subtitle="state ? undefined : 'For your privacy, please enter the phone number you used to see this order.'" :crumbs="[{ name: 'Home', path: '/' }, { name: 'Order' }]" />
+    <div class="container-page pb-10 pt-8">
       <OrderView v-if="state" :order="state.order" :phone="state.phone" :fresh="fresh" @updated="onUpdated" />
-      <div v-else>
-        <h1 class="mb-2 text-center text-3xl font-semibold">Your order {{ number }}</h1>
-        <p class="mx-auto mb-8 max-w-md text-center text-muted">For your privacy, please enter the phone number you used to see this order.</p>
-        <TrackForm :initial-number="number" @found="onFound" />
-      </div>
+      <TrackForm v-else :initial-number="number" @found="onFound" />
       <div class="mt-8 text-center"><NuxtLink to="/shop" class="btn btn-outline btn-md">Continue shopping</NuxtLink></div>
     </div>
   </div>

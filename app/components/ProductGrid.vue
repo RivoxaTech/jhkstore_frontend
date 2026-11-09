@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LayoutGrid, Square } from '@lucide/vue'
+
 import type { ProductCard } from '~/types'
 
 /**
@@ -7,17 +7,12 @@ import type { ProductCard } from '~/types'
  * 2 to 3 columns on a tablet, 4 on a desktop. Skeletons while loading have the size of the cards, so nothing jumps.
  */
 const props = defineProps<{ products: ProductCard[]; loading?: boolean; skeletons?: number; toggle?: boolean; eagerCount?: number }>()
-const { cols, set } = useGrid()
+const { cols } = useGrid()
 </script>
 
 <template>
   <div>
-    <div v-if="toggle" class="mb-3 flex justify-end sm:hidden" data-testid="grid-toggle-wrap">
-      <div class="inline-flex rounded-full bg-white p-0.5 shadow-sm ring-1 ring-line" role="group" aria-label="Products per row">
-        <button type="button" class="grid h-8 w-8 place-items-center rounded-full transition" :class="cols === 1 ? 'bg-primary-btn text-primary-contrast' : 'text-muted'" :aria-pressed="cols === 1" aria-label="One product per row" data-testid="grid-1" @click="set(1)"><Square :size="15" /></button>
-        <button type="button" class="grid h-8 w-8 place-items-center rounded-full transition" :class="cols === 2 ? 'bg-primary-btn text-primary-contrast' : 'text-muted'" :aria-pressed="cols === 2" aria-label="Two products per row" data-testid="grid-2" @click="set(2)"><LayoutGrid :size="15" /></button>
-      </div>
-    </div>
+    <div v-if="toggle" class="mb-3 flex justify-end sm:hidden"><GridToggle /></div>
 
     <ul class="grid gap-3.5 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5" :class="cols === 2 ? 'grid-cols-2' : 'grid-cols-1'" data-testid="product-grid" :data-cols="cols">
       <template v-if="loading">
