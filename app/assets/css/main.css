@@ -19,11 +19,11 @@
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
 
   /* derived: the dark footer is the primary colour darkened, the soft tints are the primary colour lightened */
-  --c-primary-dark: color-mix(in oklab, var(--c-primary) 78%, black);
+  --c-primary-dark: color-mix(in oklab, var(--c-primary) 86%, black);
   --c-footer: color-mix(in srgb, var(--c-primary) 48%, black);
   /* text on the primary / accent colour must be readable (4.5:1): app.vue replaces these two with a darker shade when the theme's colours are too light */
-  --c-primary-btn: color-mix(in srgb, var(--c-primary) 84%, black);
-  --c-accent-btn: color-mix(in srgb, var(--c-accent) 84%, black);
+  --c-primary-btn: var(--c-primary);
+  --c-accent-btn: var(--c-accent);
   --c-primary-soft: color-mix(in oklab, var(--c-primary) 12%, white);
   --c-primary-tint: color-mix(in oklab, var(--c-primary) 22%, white);
 }
@@ -85,7 +85,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 /* buttons */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; border-radius: 999px; transition: background-color .15s, transform .15s, box-shadow .15s, opacity .15s; cursor: pointer; user-select: none; white-space: nowrap; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
-.btn-primary { background: var(--c-primary-btn); color: var(--c-primary-contrast); box-shadow: 0 8px 18px -10px var(--c-primary-btn); }
+.btn-primary { background: var(--c-primary-btn); color: var(--c-primary-contrast); box-shadow: 0 8px 18px -10px var(--c-primary-btn); text-shadow: 0 1px 1px rgb(0 0 0 / .16); }
 .btn-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--c-primary-btn) 84%, black); }
 .btn-outline { background: var(--c-surface); color: var(--c-primary-dark); border: 1.5px solid var(--c-primary); }
 .btn-outline:hover:not(:disabled) { background: var(--c-primary-soft); }

@@ -581,17 +581,38 @@ try {
     await page.__ctx.close()
   }
 
-  // ================================================================ S16 contrast of the teal buttons (WCAG AA for the button text)
+  // ================================================================ S16 the buttons wear the colours of the admin panel exactly (primary colour, its text colour)
   {
     const { page } = await open()
     await go(page, '/')
-    const ratio = await page.evaluate(() => {
-      const lum = (rgb) => { const [r, g, b] = rgb.match(/\d+(\.\d+)?/g).slice(0, 3).map((v) => { const c = Number(v) / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
-      const ratioOf = (sel) => { const cs = getComputedStyle(document.querySelector(sel)); const a = lum(cs.color); const b = lum(cs.backgroundColor); return Math.round(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)) * 100) / 100 }
-      return Math.min(ratioOf('[data-testid="hero-button"]'), ratioOf('[data-testid="add-to-cart"]'), ratioOf('[data-testid="view-all"]'))
-    })
-    check(ratio >= 4.5, 'S16 contrast: white text on the teal buttons (Shop Now, Add to Cart, View all) is at least 4.5:1 (WCAG AA)', ratio)
+    const theme = (await api('GET', 'store/settings')).json.theme
+    const rgb = (hex) => { const n = parseInt(hex.slice(1), 16); return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})` }
+    const looks = await page.evaluate(() => { const cs = getComputedStyle(document.querySelector('[data-testid="hero-button"]')); return { bg: cs.backgroundColor, fg: cs.color } })
+    check(looks.bg === rgb(theme.primary) && looks.fg === rgb(theme.primary_contrast), 'S16 buttons: Shop Now has exactly the primary colour of the admin panel and its text colour (no darkened shade)', { looks, theme: [theme.primary, theme.primary_contrast] })
     await page.__ctx.close()
+  }
+
+  // ================================================================ S18 announcement bar (admin switch + text), WhatsApp button and back to the top
+  {
+    await putSettings({ announcement_enabled: true, announcement_text: 'E2E announcement text', whatsapp_number: '+92 300 1234567' })
+    const { page } = await open()
+    await go(page, '/')
+    const shown = await waitFor(page, () => !!document.querySelector('[data-testid="announcement-bar"]'), null, 15000)
+    const geo = shown && await page.evaluate(() => ({ text: document.querySelector('[data-testid="announcement-bar"]').innerText, barBottom: document.querySelector('[data-testid="announcement-bar"]').getBoundingClientRect().bottom, headerTop: document.querySelector('[data-testid="site-header"]').getBoundingClientRect().top }))
+    check(shown && /E2E announcement text/i.test(geo.text) && geo.barBottom <= geo.headerTop + 1, 'S18 announcement bar: the text from the admin panel is shown above the header when it is on', geo)
+    check(await waitFor(page, () => /^https:\/\/wa\.me\//.test(document.querySelector('[data-testid="whatsapp-float"]')?.getAttribute('href') || ''), null, 15000), 'S18 WhatsApp: a round WhatsApp button appears when the admin panel has a WhatsApp number')
+    check(!(await exists(page, '[data-testid="back-to-top"]')), 'S18 back to top: not shown at the top of the page')
+    await page.evaluate(() => window.scrollTo(0, 900)); await sleep(600)
+    check(await exists(page, '[data-testid="back-to-top"]'), 'S18 back to top: shown after the page is scrolled')
+    await click(page, '[data-testid="back-to-top"]'); await sleep(1200)
+    check(await page.evaluate(() => window.scrollY) < 40, 'S18 back to top: the button takes the page back to the top')
+    await page.__ctx.close()
+    await putSettings({ announcement_enabled: false })
+    const r2 = await open()
+    await go(r2.page, '/'); await sleep(2500)
+    check(!(await exists(r2.page, '[data-testid="announcement-bar"]')), 'S18 announcement bar: switched off in the admin panel = not shown')
+    await r2.context.close()
+    await putSettings({ announcement_text: '', whatsapp_number: '' })
   }
 } catch (e) {
   failures++

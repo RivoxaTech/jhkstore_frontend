@@ -100,8 +100,8 @@ defineExpose({ total })
     <div class="mt-4 flex items-center justify-between gap-2 border-y border-line/80 py-2.5">
       <p class="text-sm text-muted" data-testid="result-count" aria-live="polite"><template v-if="status === 'pending'">Loading...</template><template v-else><strong class="text-ink">{{ total }}</strong> {{ total === 1 ? 'toy' : 'toys' }}<template v-if="q"> for "{{ q }}"</template></template></p>
       <div class="flex items-center gap-1.5">
-        <GridToggle />
         <SortMenu :model-value="sort" :options="SORTS" @update:model-value="setSort" />
+        <GridToggle />
       </div>
     </div>
 
