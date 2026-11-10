@@ -52,10 +52,13 @@ async function addToCart() {
       <p class="clamp-1 mt-1 min-h-[1.2rem] text-[12px] leading-[1.2rem] text-muted" data-testid="card-description">{{ product.short_description }}</p>
 
       <!-- the old price (light, struck through) in its own line, the price to pay under it: calm sizes that shrink on a phone -->
-      <p class="mt-2 min-h-[1.05rem] truncate text-[11px] leading-[1.05rem] text-muted/70 sm:text-[12px]" data-testid="card-compare">
-        <s v-if="product.compare_price && product.compare_price > (product.price ?? 0)">{{ money(product.compare_price) }}</s>
-      </p>
-      <p class="truncate text-[13px] font-semibold leading-snug sm:text-[14.5px]" data-testid="card-price">{{ product.show_starting_at ? 'From ' : '' }}{{ money(product.price) }}</p>
+      <!-- one product per row (a phone, full width): the price and the old price share a line; several per row: the old price above the price -->
+      <div class="mt-2 flex" :class="grid.cols.value === 1 ? 'flex-row items-baseline gap-2 sm:flex-col-reverse sm:gap-0' : 'flex-col-reverse'" data-testid="card-prices">
+        <p class="truncate text-[13px] font-semibold leading-snug sm:text-[14.5px]" data-testid="card-price">{{ product.show_starting_at ? 'From ' : '' }}{{ money(product.price) }}</p>
+        <p class="truncate text-[11px] leading-[1.05rem] text-muted/70 sm:min-h-[1.05rem] sm:text-[12px]" :class="grid.cols.value === 1 ? '' : 'min-h-[1.05rem]'" data-testid="card-compare">
+          <s v-if="product.compare_price && product.compare_price > (product.price ?? 0)">{{ money(product.compare_price) }}</s>
+        </p>
+      </div>
 
       <div class="mt-auto flex pt-3" :class="grid.cols.value === 2 ? 'justify-center sm:justify-end' : 'justify-end'">
         <button
