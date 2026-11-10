@@ -25,10 +25,12 @@ const multi = computed(() => !props.product.has_single_option || !props.product.
 
 async function addToCart() {
   if (multi.value) return navigateTo(href.value)
+  // instant: the drawer opens and the button answers at once; the server call finishes in the background (a failure is told in a toast)
   adding.value = true
-  const r = await cart.add(props.product.variant_id as number, props.product.min_order_qty || 1)
-  adding.value = false
-  if (r.ok) { toast.success('Added to cart'); cart.drawerOpen.value = true } else toast.error(r.message || 'Could not add this toy')
+  cart.drawerOpen.value = true
+  cart.add(props.product.variant_id as number, props.product.min_order_qty || 1).then((r) => {
+    if (r.ok) toast.success('Added to cart'); else { toast.error(r.message || 'Could not add this toy'); cart.refresh(undefined, true) }
+  }).finally(() => { adding.value = false })
 }
 </script>
 
@@ -49,10 +51,11 @@ async function addToCart() {
       <h3 class="text-[13.5px] font-semibold leading-snug"><NuxtLink :to="href" class="hover:text-primary-dark">{{ product.name }}</NuxtLink></h3>
       <p class="clamp-1 mt-1 min-h-[1.2rem] text-[12px] leading-[1.2rem] text-muted" data-testid="card-description">{{ product.short_description }}</p>
 
-      <div class="mt-2 flex items-baseline gap-2">
-        <span class="text-[15px] font-bold">{{ product.show_starting_at ? 'From ' : '' }}{{ money(product.price) }}</span>
-        <span v-if="product.compare_price && product.compare_price > (product.price ?? 0)" class="text-[12px] text-muted line-through">{{ money(product.compare_price) }}</span>
-      </div>
+      <!-- the old price (light, struck through) in its own line, the price to pay under it: calm sizes that shrink on a phone -->
+      <p class="mt-2 min-h-[1.05rem] truncate text-[11px] leading-[1.05rem] text-muted/70 sm:text-[12px]" data-testid="card-compare">
+        <s v-if="product.compare_price && product.compare_price > (product.price ?? 0)">{{ money(product.compare_price) }}</s>
+      </p>
+      <p class="truncate text-[13px] font-semibold leading-snug sm:text-[14.5px]" data-testid="card-price">{{ product.show_starting_at ? 'From ' : '' }}{{ money(product.price) }}</p>
 
       <div class="mt-auto flex pt-3" :class="grid.cols.value === 2 ? 'justify-center sm:justify-end' : 'justify-end'">
         <button

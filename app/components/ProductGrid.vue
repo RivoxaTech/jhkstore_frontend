@@ -14,7 +14,7 @@ const { cols } = useGrid()
   <div>
     <div v-if="toggle" class="mb-3 flex justify-end sm:hidden"><GridToggle /></div>
 
-    <ul class="grid gap-3.5 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5" :class="cols === 2 ? 'grid-cols-2' : 'grid-cols-1'" data-testid="product-grid" :data-cols="cols">
+    <ul class="grid gap-x-4 gap-y-6 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-8 lg:gap-y-10" :class="cols === 2 ? 'grid-cols-2' : 'grid-cols-1'" data-testid="product-grid" :data-cols="cols">
       <template v-if="loading">
         <li v-for="n in skeletons ?? 8" :key="`s${n}`" class="card overflow-hidden" aria-hidden="true">
           <div class="skeleton aspect-square rounded-none" />

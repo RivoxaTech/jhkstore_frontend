@@ -17,7 +17,7 @@ useSeo(() => ({
 // the product list of the enquiry form is baked in at build time
 const { data: products } = await useFastData('wholesale-products', () => api<Paginated<ProductCard>>('/products', { query: { per_page: 100, sort: 'newest' } }).then((r) => r.data))
 
-const form = reactive({ name: '', phone: '', email: '', business_name: '', product: '' as string, product_name: '', quantity: '' as string | number, message: '', website: '' })
+const form = reactive({ name: '', phone: '', email: '', business_name: '', product: '' as string, product_name: '', quantity: '' as string | number, message: '', hp_extra: '' })
 const busy = ref(false)
 const done = ref('')
 const error = ref('')
@@ -37,7 +37,7 @@ async function submit() {
 
   busy.value = true
   const body: Record<string, any> = {
-    name: form.name.trim(), phone: form.phone.trim(), quantity: Number(form.quantity), website: form.website,
+    name: form.name.trim(), phone: form.phone.trim(), quantity: Number(form.quantity), hp_extra: form.hp_extra,
     ...(form.email.trim() ? { email: form.email.trim() } : {}), ...(form.business_name.trim() ? { business_name: form.business_name.trim() } : {}),
     ...(form.message.trim() ? { message: form.message.trim() } : {}),
     ...(chosen.value && chosen.value.variant_id ? { product_id: chosen.value.id, variant_id: chosen.value.variant_id } : { product_name: form.product_name.trim() }),
@@ -47,7 +47,10 @@ async function submit() {
     done.value = res.data.reference
   } catch (e) {
     const f = apiFailure(e)
-    if (f.status === 422 && f.code === 'rejected') error.value = 'Something looks wrong with this form. Please reload the page and try again.'
+    if (f.status === 422 && f.code === 'rejected') {
+      if (form.hp_extra) { form.hp_extra = ''; busy.value = false; await submit(); return }   // an auto-filled trap field: empty it and send once more
+      error.value = 'We could not send your enquiry just now. Please try again in a moment, or call us.'
+    }
     else if (f.status === 422) { fieldErrors.value = Object.fromEntries(Object.entries(f.errors).map(([k, v]) => [k, v[0]])); error.value = Object.keys(fieldErrors.value).length ? 'Please check the highlighted fields.' : f.message }
     else if (f.status === 429) error.value = `You have sent several enquiries already. Please try again ${f.retryAfter ? `in about ${Math.max(1, Math.ceil(f.retryAfter / 60))} minute(s)` : 'a little later'}, or call us.`
     else error.value = f.message
@@ -81,7 +84,7 @@ async function submit() {
             <div v-if="!chosen" class="sm:col-span-2"><label class="field-label" for="b-pname">What are you looking for? *</label><input id="b-pname" v-model="form.product_name" class="field-input" placeholder="For example: wooden puzzles for a nursery" :aria-invalid="!!fieldErrors.product_name" data-testid="b-product-name"><p v-if="fieldErrors.product_name" class="field-error">{{ fieldErrors.product_name }}</p></div>
             <div><label class="field-label" for="b-qty">Quantity *</label><input id="b-qty" v-model="form.quantity" type="number" min="1" inputmode="numeric" class="field-input" :aria-invalid="!!fieldErrors.quantity" data-testid="b-quantity"><p v-if="fieldErrors.quantity" class="field-error">{{ fieldErrors.quantity }}</p></div>
             <div class="sm:col-span-2"><label class="field-label" for="b-msg">Message <span class="font-normal text-muted">(optional)</span></label><textarea id="b-msg" v-model="form.message" rows="3" maxlength="1000" class="field-textarea" placeholder="Delivery place, how often, anything we should know" /></div>
-            <div class="hp-field" aria-hidden="true"><label for="b-website">Leave this empty</label><input id="b-website" v-model="form.website" type="text" name="website" tabindex="-1" autocomplete="off"></div>
+            <div class="hp-field" aria-hidden="true"><label for="b-hp">Leave this empty</label><input id="b-hp" v-model="form.hp_extra" type="text" name="hp_extra" tabindex="-1" autocomplete="off"></div>
             <p v-if="error" class="rounded-xl bg-[#fde8ec] px-4 py-3 text-sm text-[#9a1d33] sm:col-span-2" role="alert" data-testid="bulk-error">{{ error }}</p>
             <div class="sm:col-span-2"><button type="submit" class="btn btn-primary btn-lg" :disabled="busy" data-testid="bulk-submit"><LoaderCircle v-if="busy" :size="18" class="animate-spin" /><Send v-else :size="17" /> {{ busy ? 'Sending...' : 'Send my enquiry' }}</button></div>
           </form>

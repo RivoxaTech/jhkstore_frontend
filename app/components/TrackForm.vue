@@ -30,7 +30,6 @@ async function submit() {
     <div><label class="field-label" for="track-number">Order number</label><input id="track-number" v-model="number" class="field-input uppercase" placeholder="e.g. ORD-2026-000123" autocomplete="off" data-testid="track-number" :aria-invalid="!!error"></div>
     <div><label class="field-label" for="track-phone">Phone number</label><input id="track-phone" v-model="phone" type="tel" class="field-input" placeholder="The phone you gave when you ordered" autocomplete="tel" data-testid="track-phone" :aria-invalid="!!error"></div>
     <p v-if="error" class="rounded-xl bg-[#fde8ec] px-3 py-2.5 text-sm text-[#9a1d33]" role="alert" data-testid="track-error">{{ error }}</p>
-    <input type="text" name="website" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
     <button type="submit" class="btn btn-primary btn-lg w-full" :disabled="busy" data-testid="track-submit"><Search :size="17" /> {{ busy ? 'Looking...' : 'Track my order' }}</button>
   </form>
 </template>

@@ -61,9 +61,10 @@ const isExternal = (l: string) => /^https?:\/\//i.test(l)
             :fetchpriority="i === 0 ? 'high' : 'low'" decoding="async"
           >
         </picture>
-        <div v-if="s.image" class="absolute inset-0 -z-10 bg-gradient-to-b from-page/95 via-page/65 to-page/0 sm:bg-gradient-to-r sm:from-page/90 sm:via-page/30 sm:to-transparent lg:[background-image:linear-gradient(90deg,color-mix(in_srgb,var(--c-bg)_96%,transparent)_0%,color-mix(in_srgb,var(--c-bg)_60%,transparent)_30%,transparent_50%)]" aria-hidden="true" />
+        <!-- phone: the wash only covers the text area, the picture below it is shown clear (no veil over it) -->
+        <div v-if="s.image" class="absolute inset-0 -z-10 [background-image:linear-gradient(180deg,color-mix(in_srgb,var(--c-bg)_96%,transparent)_0%,color-mix(in_srgb,var(--c-bg)_70%,transparent)_30%,transparent_46%)] sm:bg-gradient-to-r sm:from-page/90 sm:via-page/30 sm:to-transparent lg:[background-image:linear-gradient(90deg,color-mix(in_srgb,var(--c-bg)_96%,transparent)_0%,color-mix(in_srgb,var(--c-bg)_60%,transparent)_30%,transparent_50%)]" aria-hidden="true" />
 
-        <div class="container-page pb-14 pt-8 sm:py-14 lg:py-20">
+        <div class="container-page pb-24 pt-8 sm:py-14 lg:py-20">
           <div class="max-w-[560px]">
             <p v-if="eyebrow" class="flex items-center gap-3 text-[15px] font-bold tracking-[0.06em] text-accent">
               {{ eyebrow }}<span class="h-px w-16 bg-accent/60" aria-hidden="true" />
@@ -72,15 +73,15 @@ const isExternal = (l: string) => /^https?:\/\//i.test(l)
             <h2 v-else class="mt-4 text-[clamp(2.3rem,5.4vw,4.1rem)] font-semibold leading-[1.06]"><AccentText :text="s.title" /></h2>
             <p v-if="s.subtitle" class="mt-4 max-w-lg text-[19px] text-ink/90">{{ s.subtitle }}</p>
             <div v-if="s.button" class="mt-8">
-              <a v-if="isExternal(s.link)" :href="s.link" class="btn btn-primary btn-lg">{{ s.button }} <ArrowRight :size="18" /></a>
-              <NuxtLink v-else :to="s.link || '/shop'" class="btn btn-primary btn-lg" data-testid="hero-button">{{ s.button }} <ArrowRight :size="18" /></NuxtLink>
+              <a v-if="isExternal(s.link)" :href="s.link" class="btn btn-primary btn-hero">{{ s.button }} <ArrowRight :size="17" /></a>
+              <NuxtLink v-else :to="s.link || '/shop'" class="btn btn-primary btn-hero" data-testid="hero-button">{{ s.button }} <ArrowRight :size="17" /></NuxtLink>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[var(--c-bg)] to-transparent" aria-hidden="true" />
-      <div v-if="slides.length > 1" class="absolute inset-x-0 bottom-14 z-10 flex justify-center gap-2 lg:bottom-16" role="tablist" aria-label="Choose a slide">
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 hidden h-28 bg-gradient-to-t from-[var(--c-bg)] to-transparent sm:block" aria-hidden="true" />
+      <div v-if="slides.length > 1" class="absolute inset-x-0 bottom-24 z-10 flex justify-center gap-2 sm:bottom-14 lg:bottom-16" role="tablist" aria-label="Choose a slide">
         <button
           v-for="(s, i) in slides" :key="i" type="button" role="tab" class="h-2.5 rounded-full transition-all" :class="i === index ? 'w-7 bg-primary' : 'w-2.5 bg-primary/35 hover:bg-primary/60'"
           :aria-selected="i === index" :aria-label="`Slide ${i + 1}`" data-testid="hero-dot" @click="go(i)"

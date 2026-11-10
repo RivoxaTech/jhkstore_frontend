@@ -45,6 +45,7 @@ export const site = {
       { label: 'Shop', to: '/shop' },
       { label: 'About', to: '/about' },
       { label: 'Wholesale', to: '/wholesale' },
+      { label: 'Track your order', to: '/track' },
     ],
     support: [
       { label: 'Shipping', to: '/shipping-policy' },

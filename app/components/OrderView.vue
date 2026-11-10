@@ -39,7 +39,9 @@ const t = computed(() => o.value.totals ?? {})
 
       <ol v-if="!closed" class="mt-6 grid grid-cols-5 gap-1 text-center text-[11px] sm:text-xs" aria-label="Order progress">
         <li v-for="(s, i) in STEPS" :key="s" class="relative">
-          <span class="mx-auto grid h-7 w-7 place-items-center rounded-full text-xs font-bold" :class="i <= stepIndex ? 'bg-primary text-primary-contrast' : 'bg-primary-soft text-muted'">{{ i < stepIndex ? '✓' : i + 1 }}</span>
+          <!-- the line from the step before to this one: filled once the order has reached this step -->
+          <span v-if="i > 0" class="absolute -left-[calc(50%+2px)] right-[calc(50%-2px)] top-[13px] h-[3px] rounded-full" :class="i <= stepIndex ? 'bg-primary' : 'bg-primary/20'" aria-hidden="true" data-testid="step-line" />
+          <span class="relative z-10 mx-auto grid h-7 w-7 place-items-center rounded-full text-xs font-bold" :class="i <= stepIndex ? 'bg-primary text-primary-contrast' : 'bg-primary-soft text-muted'">{{ i < stepIndex ? '✓' : i + 1 }}</span>
           <span class="mt-1 block font-medium capitalize" :class="i <= stepIndex ? 'text-ink' : 'text-muted'">{{ s }}</span>
         </li>
       </ol>

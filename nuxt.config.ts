@@ -61,6 +61,10 @@ export default defineNuxtConfig({
     },
   },
 
+  // `nuxt dev` only: no `_payload.json` per page. In dev the server renders every page on demand, so a click on a link waited seconds for that file;
+  // without it the browser asks the API directly (the generated site keeps its static payloads, which are plain files and instant).
+  $development: { experimental: { payloadExtraction: false } },
+
   // the static build: every page is prerendered, the ones that only make sense in a browser are a client-side shell
   nitro: {
     preset: 'static',

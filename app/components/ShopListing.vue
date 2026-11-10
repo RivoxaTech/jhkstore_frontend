@@ -12,7 +12,7 @@ const router = useRouter()
 const PER_PAGE = 24
 
 const SORTS = [
-  { value: 'popularity', label: 'Most popular' }, { value: 'newest', label: 'Newest' }, { value: 'price_asc', label: 'Price: low to high' },
+  { value: 'popularity', label: 'Recommended' }, { value: 'newest', label: 'Newest' }, { value: 'price_asc', label: 'Price: low to high' },
   { value: 'price_desc', label: 'Price: high to low' }, { value: 'discount', label: 'Biggest discount' },
 ]
 

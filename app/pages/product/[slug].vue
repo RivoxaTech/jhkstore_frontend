@@ -65,12 +65,18 @@ async function add(buyNow = false) {
   if (!variant.value || soldOut.value) return
   adding.value = true
   addError.value = ''
+  if (!buyNow) {
+    // instant: the cart opens at once, the server call finishes in the background (a failure is shown under the buttons)
+    cart.drawerOpen.value = true
+    cart.add(variant.value.id, qty.value).then((r) => {
+      if (r.ok) toast.success('Added to cart'); else { addError.value = r.message || 'Could not add this toy to the cart'; cart.drawerOpen.value = false }
+    }).finally(() => { adding.value = false })
+    return
+  }
   const r = await cart.add(variant.value.id, qty.value)
   adding.value = false
   if (!r.ok) { addError.value = r.message || 'Could not add this toy to the cart'; return }
-  if (buyNow) return navigateTo('/checkout')
-  toast.success('Added to cart')
-  cart.drawerOpen.value = true
+  return navigateTo('/checkout')
 }
 
 // ---- SEO

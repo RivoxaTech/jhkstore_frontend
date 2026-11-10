@@ -6,7 +6,7 @@ import type { ApiFailure } from '~/composables/useApi'
 /**
  * One-page checkout (client only, not indexed). The cart lives on the server: this page asks the server to price it (POST /checkout/quote) whenever the address
  * or the coupon changes and shows the server's totals, never a sum of its own. Placing the order sends an Idempotency-Key (created when the page opens, so a double
- * tap or a retry never makes two orders), the total the customer saw (a changed price is explained and has to be confirmed), and the hidden honeypot field `website`.
+ * tap or a retry never makes two orders), the total the customer saw (a changed price is explained and has to be confirmed), and the hidden honeypot field `hp_extra`.
  * Bank transfer: the bank details and the amount are shown right here and the customer attaches the screenshot of the transfer; when the shop requires it
  * (Settings → Payments) the order cannot be placed without it. The order and the screenshot travel together (multipart).
  */
@@ -17,7 +17,7 @@ const memory = useOrderMemory()
 const { settings, isClosed } = useSettings()
 const { money } = useMoney()
 
-const form = reactive({ name: '', phone: '', email: '', line1: '', city: '', area: '', postcode: '', landmark: '', country: '', note: '', payment: 'cod' as 'cod' | 'bank_transfer', website: '' })
+const form = reactive({ name: '', phone: '', email: '', line1: '', city: '', area: '', postcode: '', landmark: '', country: '', note: '', payment: 'cod' as 'cod' | 'bank_transfer', hp_extra: '' })
 const touched = ref(false)
 const idempotencyKey = ref('')
 const quote = ref<Quote | null>(null)
@@ -58,7 +58,7 @@ async function requote() {
   quoting.value = true
   quoteError.value = ''
   try {
-    const body: Record<string, any> = { cart_token: cart.token(), address: { city: form.city.trim(), area: form.area.trim(), postcode: form.postcode.trim() }, website: '' }
+    const body: Record<string, any> = { cart_token: cart.token(), address: { city: form.city.trim(), area: form.area.trim(), postcode: form.postcode.trim() }, hp_extra: '' }
     if (form.phone.trim()) body.phone = form.phone.trim()
     quote.value = (await api<{ data: Quote }>('/checkout/quote', { method: 'POST', body })).data
   } catch (e) { quoteError.value = apiFailure(e).message } finally { quoting.value = false }
@@ -145,7 +145,7 @@ async function place(confirmChange = false) {
     payment_method: form.payment,
     customer_note: form.note.trim() || undefined,
     expected_total: expected,
-    website: form.website,   // the honeypot: a real visitor never fills it
+    hp_extra: form.hp_extra,   // the honeypot: a real visitor never fills it
   }
   const withProof = form.payment === 'bank_transfer' && !!proof.value
   if (withProof) { body.proof = proof.value; if (proofReference.value.trim()) body.reference = proofReference.value.trim() }
@@ -177,7 +177,12 @@ async function explain(f: ApiFailure) {
   if (code === 'delivery_not_available') { problem.value = { code, message: f.message || 'We cannot deliver to this address yet.' }; await requote(); return }
   if (code === 'store_closed') { problem.value = { code, message: f.message || 'The shop is closed right now.' }; return }
   if (code === 'payment_method_unavailable') { problem.value = { code, message: 'This payment method is not available right now. Please choose another one.' }; try { settings.value && (useSettingsState().value = await api('/settings')) } catch { /* keep */ } pickPayment(); return }
-  if (code === 'rejected') { problem.value = { code, message: 'Something looks wrong with this form. Please reload the page and try again.' }; return }
+  if (code === 'rejected') {
+    // a browser that auto-filled the hidden trap field: empty it and send once more, the customer never notices
+    if (form.hp_extra) { form.hp_extra = ''; submitting.value = false; await place(false); return }
+    problem.value = { code, message: 'We could not place your order just now. Please try again in a moment, or call us and we will take it by phone.' }
+    return
+  }
   problem.value = { code: code || 'error', message: firstError(f) }
 }
 
@@ -323,7 +328,7 @@ const showProofError = computed(() => (touched.value && errors.value.proof) || p
           <p v-if="settings?.checkout.eta_text && !summary?.delivery_zone?.eta_text" class="text-xs text-muted">Usual delivery time: {{ settings.checkout.eta_text }}</p>
 
           <!-- honeypot: invisible to people, filled by bots -->
-          <div class="hp-field" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" v-model="form.website" type="text" name="website" tabindex="-1" autocomplete="off"></div>
+          <div class="hp-field" aria-hidden="true"><label for="hp_extra">Leave this empty</label><input id="hp_extra" v-model="form.hp_extra" type="text" name="hp_extra" tabindex="-1" autocomplete="off"></div>
 
           <button type="submit" class="btn btn-primary btn-lg w-full" :disabled="!canPlace || (!codOn && !bankOn)" data-testid="place-order">
             <LoaderCircle v-if="submitting" :size="18" class="animate-spin" /> {{ submitting ? 'Placing your order...' : closed ? 'The shop is closed' : 'Place order' }}

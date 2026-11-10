@@ -37,7 +37,7 @@ const issue = computed(() => cart.cart.value?.issues?.[0]?.message || '')
           </header>
 
           <div class="flex-1 overflow-y-auto px-5">
-            <div v-if="cart.loading.value && !cart.cart.value" class="space-y-4 py-6"><div v-for="n in 3" :key="n" class="skeleton h-20 w-full" /></div>
+            <div v-if="(cart.loading.value && !cart.cart.value) || (cart.busy.value && !cart.lines.value.length)" class="space-y-4 py-6"><div v-for="n in 3" :key="n" class="skeleton h-20 w-full" /></div>
             <p v-else-if="cart.loadError.value" class="py-8 text-center text-sm text-[#b4233c]" role="alert">{{ cart.loadError.value }} <button type="button" class="font-semibold underline" @click="cart.refresh()">Try again</button></p>
             <div v-else-if="!cart.lines.value.length" class="grid place-items-center py-16 text-center">
               <ShoppingBag :size="44" class="text-primary/40" :stroke-width="1.3" />

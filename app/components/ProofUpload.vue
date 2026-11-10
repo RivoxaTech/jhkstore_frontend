@@ -37,7 +37,7 @@ async function send() {
   const body = new FormData()
   body.append('proof', file.value)
   if (reference.value.trim()) body.append('reference', reference.value.trim())
-  body.append('website', '')   // the honeypot field, left empty
+  body.append('hp_extra', '')   // the honeypot field, left empty
   try {
     const res = await api<{ data: Order }>(`/orders/${encodeURIComponent(props.number)}/payment-proof`, { method: 'POST', body, query: { phone: props.phone } })
     emit('uploaded', res.data)

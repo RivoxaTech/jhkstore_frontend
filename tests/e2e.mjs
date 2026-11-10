@@ -188,7 +188,7 @@ try {
   {
     const page0 = await html('/product/rainbow-stacking-blocks/')
     check(page0.includes('Rainbow Stacking Blocks') && /Rs\.\s?28/.test(page0) && /<img[^>]+rainbow-stacking-blocks/.test(page0) && page0.includes('application/ld+json') && page0.includes('"@type":"Product"'), 'S3 product HTML (no JavaScript): name, price, picture tags and Product JSON-LD are already in the file')
-    check(/<link rel="canonical" href="[^"]+\/product\/rainbow-stacking-blocks"/.test(page0) && page0.includes('og:image') && page0.includes('BreadcrumbList') && /<title>Rainbow Stacking Blocks \| /.test(page0), 'S3 product HTML: title, canonical, Open Graph image and BreadcrumbList')
+    check(/<link rel="canonical" href="[^"]+\/product\/rainbow-stacking-blocks"/.test(page0) && page0.includes('og:image') && page0.includes('BreadcrumbList') && /<title>Rainbow Stacking Blocks[^|<]*\| /.test(page0), 'S3 product HTML: title, canonical, Open Graph image and BreadcrumbList')
 
     const { page, problems } = await open()
     await go(page, '/product/rainbow-stacking-blocks')
@@ -289,8 +289,8 @@ try {
     await cartWith(page, single.variant_id, 2)
     await go(page, '/checkout')
     check(await exists(page, '[data-testid="f-name"]') && await exists(page, '[data-testid="pay-cod"]') && await exists(page, '[data-testid="pay-bank"]'), 'S6 checkout: contact, address and the two payment methods from the settings')
-    check(await page.$eval('input[name="website"]', (e) => { const r = e.getBoundingClientRect(); return r.left < -500 || r.width <= 1 }), 'S6 checkout: the honeypot field `website` exists and is out of sight')
-    check(await page.evaluate(() => document.querySelector('input[name="website"]').tabIndex) === -1, 'S6 checkout: the honeypot is out of the tab order')
+    check(await page.$eval('input[name="hp_extra"]', (e) => { const r = e.getBoundingClientRect(); return r.left < -500 || r.width <= 1 }), 'S6 checkout: the honeypot field `hp_extra` exists and is out of sight')
+    check(await page.evaluate(() => document.querySelector('input[name="hp_extra"]').tabIndex) === -1, 'S6 checkout: the honeypot is out of the tab order')
     await click(page, '[data-testid="place-order"]'); await sleep(400)
     check(await exists(page, '[aria-invalid="true"]') && !page.url().includes('/order/'), 'S6 checkout: an empty form is not sent; the fields say what is missing')
     await fillCheckout(page, 'cod')
@@ -303,7 +303,7 @@ try {
     await page.waitForSelector('[data-testid="order-number"]', { timeout: 15000 })
     orderNumbers.cod = await text(page, '[data-testid="order-number"]')
     check(/^[A-Z]+-\d{4}-\d{6}$/.test(orderNumbers.cod), 'S6 checkout: the order is placed and the success page shows its number', orderNumbers.cod)
-    check(!!sent && /^[0-9a-f-]{36}$/.test(sent.headers['idempotency-key'] || '') && sent.body.website === '' && typeof sent.body.expected_total === 'number' && !!sent.body.cart_token && sent.body.payment_method === 'cod', 'S6 checkout: the order request has an Idempotency-Key (UUID), the empty honeypot, expected_total and the cart token', sent && { key: sent.headers['idempotency-key'], website: sent.body.website, expected: sent.body.expected_total })
+    check(!!sent && /^[0-9a-f-]{36}$/.test(sent.headers['idempotency-key'] || '') && sent.body.hp_extra === '' && typeof sent.body.expected_total === 'number' && !!sent.body.cart_token && sent.body.payment_method === 'cod', 'S6 checkout: the order request has an Idempotency-Key (UUID), the empty honeypot, expected_total and the cart token', sent && { key: sent.headers['idempotency-key'], hp_extra: sent.body.hp_extra, expected: sent.body.expected_total })
     check(/Cash on delivery/.test(await page.evaluate(() => document.body.innerText)), 'S6 checkout: cash on delivery says what to keep ready')
     check(await text(page, '[data-testid="cart-count"]') === '0', 'S6 checkout: the cart is empty after the order')
     check(await page.evaluate((n) => localStorage.getItem('jhk_last_order') === n, orderNumbers.cod), 'S6 checkout: the last order number is remembered in localStorage')
@@ -397,11 +397,11 @@ try {
     await fill(page, '[data-testid="b-product"]', String(catalogue[0].id)); await fill(page, '[data-testid="b-quantity"]', '120')
     await click(page, '[data-testid="bulk-submit"]')
     check(await waitFor(page, () => !!document.querySelector('[data-testid="bulk-success"]')) && /^WS-/.test(await text(page, '[data-testid="bulk-reference"]')), 'S9 wholesale: the enquiry is sent and the reference is shown', await exists(page, '[data-testid="bulk-reference"]') ? await text(page, '[data-testid="bulk-reference"]') : await exists(page, '[data-testid="bulk-error"]') ? await text(page, '[data-testid="bulk-error"]') : '')
-    check(await page.evaluate(() => document.querySelectorAll('input[name="website"]').length) === 0, 'S9 wholesale: (the form is gone after success)')
+    check(await page.evaluate(() => document.querySelectorAll('input[name="hp_extra"]').length) === 0, 'S9 wholesale: (the form is gone after success)')
     await page.__ctx.close()
     const r2 = await open()
     await go(r2.page, '/wholesale')
-    check(await r2.page.$eval('input[name="website"]', (e) => e.tabIndex === -1 && e.value === ''), 'S9 wholesale: the honeypot field `website` is in the form, empty and out of the tab order')
+    check(await r2.page.$eval('input[name="hp_extra"]', (e) => e.tabIndex === -1 && e.value === ''), 'S9 wholesale: the honeypot field `hp_extra` is in the form, empty and out of the tab order')
     await r2.context.close()
   }
 
@@ -499,12 +499,12 @@ try {
     await go(page, '/category/arts-crafts')
 
     await go(page, '/shop?sort=price_asc')
-    const prices = await page.$$eval('[data-testid="product-card"]', (cards) => cards.slice(0, 6).map((c) => Number((c.innerText.match(/Rs\.\s?([\d,]+)/) || [])[1]?.replace(/,/g, '')) || 0))
+    const prices = await page.$$eval('[data-testid="product-card"]', (cards) => cards.slice(0, 6).map((c) => Number((c.querySelector('[data-testid="card-price"]').innerText.match(/Rs\.\s?([\d,]+)/) || [])[1]?.replace(/,/g, '')) || 0))
     check(prices.every((p, i) => i === 0 || p >= prices[i - 1]), 'S13 shop: sort by price, low to high', prices)
     await go(page, '/shop?stock=1')
     check(!(await page.evaluate(() => /SOLD OUT/.test(document.body.innerText))) && soldOut !== undefined, 'S13 shop: the in-stock filter hides the sold-out toy')
     await go(page, '/shop?min=40&max=60')
-    const range = await page.$$eval('[data-testid="product-card"]', (cards) => cards.map((c) => Number((c.innerText.match(/Rs\.\s?([\d,]+)/) || [])[1]?.replace(/,/g, '')) || 0))
+    const range = await page.$$eval('[data-testid="product-card"]', (cards) => cards.map((c) => Number((c.querySelector('[data-testid="card-price"]').innerText.match(/Rs\.\s?([\d,]+)/) || [])[1]?.replace(/,/g, '')) || 0))
     check(range.length > 0 && range.every((p) => p >= 40 && p <= 60), 'S13 shop: the price filter', range)
 
     for (const [route, h1] of [['/about', /About us/], ['/shipping-policy', /Shipping policy/], ['/return-policy', /Return policy/], ['/terms-and-conditions', /Terms and conditions/], ['/privacy-policy', /Privacy policy/]]) {

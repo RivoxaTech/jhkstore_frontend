@@ -20,7 +20,7 @@
 
   /* derived: the dark footer is the primary colour darkened, the soft tints are the primary colour lightened */
   --c-primary-dark: color-mix(in oklab, var(--c-primary) 86%, black);
-  --c-footer: color-mix(in srgb, var(--c-primary) 48%, black);
+  --c-footer: var(--c-primary);   /* the footer and the top bar wear the colour of the logo icon */
   /* text on the primary / accent colour must be readable (4.5:1): app.vue replaces these two with a darker shade when the theme's colours are too light */
   --c-primary-btn: var(--c-primary);
   --c-accent-btn: var(--c-accent);
@@ -143,3 +143,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
+
+/* announcement bar: one line; a text wider than the screen scrolls like a ticker */
+.ab-track { display: inline-block; white-space: nowrap; }
+.ab-scroll .ab-track { padding-left: 100%; animation: ab-scroll 20s linear infinite; }
+@keyframes ab-scroll { to { transform: translateX(-100%); } }
+@media (prefers-reduced-motion: reduce) { .ab-scroll { text-overflow: ellipsis; white-space: nowrap; } .ab-scroll .ab-track { animation: none; padding-left: 0; } }
+
+/* the button of the hero: smaller on a phone */
+.btn-hero { height: 42px; padding-inline: 20px; font-size: 14px; }
+@media (min-width: 640px) { .btn-hero { height: 48px; padding-inline: 28px; font-size: 16px; } }
