@@ -41,8 +41,8 @@ if (!(await up(`${SITE}/`))) { console.error(`The site is not served at ${SITE}:
 if (!(await up(`${API}/store/settings`))) { console.error(`The API is not reachable at ${API}`); process.exit(2) }
 
 // ---------------------------------------------------------------- helpers
-async function api(method, route, { token, body } = {}) {
-  const r = await fetch(`${API}/${route}`, { method, headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined })
+async function api(method, route, { token, body, headers = {} } = {}) {
+  const r = await fetch(`${API}/${route}`, { method, headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers }, body: body ? JSON.stringify(body) : undefined })
   const text = await r.text()
   let json = null
   try { json = JSON.parse(text) } catch { /* not json */ }
@@ -118,6 +118,11 @@ async function fillCheckout(page, pay = 'cod') {
   await waitFor(page, () => /Free|Rs\.\s?\d/.test(document.querySelector('[data-testid="delivery-line"]')?.innerText || ''), null, 20000)
   await waitFor(page, () => !document.querySelector('[data-testid="place-order"]')?.disabled, null, 20000)   // the server has priced the cart: the button is on
   await sleep(300)
+  // abandoned carts: what the customer typed (phone) is saved on the cart a moment after typing, so a cart that is left behind can be followed up
+  const cartToken = await page.evaluate(() => localStorage.getItem('jhk_cart_token'))
+  await sleep(1800)
+  const saved = await api('GET', 'store/cart', { headers: { 'X-Cart-Token': cartToken } })
+  check(String(saved.json?.data?.contact?.phone || '').replace(/\D/g, '').endsWith(ADDRESS.phone.replace(/\D/g, '').slice(-9)), 'S5 abandoned cart: the phone typed at checkout is saved on the cart (so the shop can follow it up)', saved.json?.data?.contact)
 }
 
 try {

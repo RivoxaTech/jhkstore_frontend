@@ -66,6 +66,22 @@ async function requote() {
 watch(() => [form.city, form.area, form.postcode, form.phone], () => { clearTimeout(timer); timer = setTimeout(requote, 600) })
 onBeforeUnmount(() => clearTimeout(timer))
 
+// ---- the cart remembers who is buying (phone and / or e-mail), so a cart that is left behind can be followed up by the shop (Customers > Abandoned carts)
+let contactTimer: ReturnType<typeof setTimeout> | undefined
+watch(() => [form.name, form.phone, form.email], () => {
+  clearTimeout(contactTimer)
+  contactTimer = setTimeout(() => {
+    const digits = form.phone.replace(/\D/g, '').length
+    const contact: { name?: string; phone?: string; email?: string } = {}
+    if (digits >= 7 && digits <= 15 && form.phone.trim().length <= 25) contact.phone = form.phone.trim()
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) contact.email = form.email.trim()
+    if (!contact.phone && !contact.email) return   // nothing to follow up with yet
+    if (form.name.trim().length >= 2) contact.name = form.name.trim().slice(0, 120)
+    cart.saveContact(contact)
+  }, 1200)
+})
+onBeforeUnmount(() => clearTimeout(contactTimer))
+
 async function applyCoupon() {
   couponMessage.value = ''
   if (!couponCode.value.trim()) return
@@ -132,6 +148,7 @@ const empty = computed(() => !cart.lines.value.length)
 const canPlace = computed(() => !!quote.value?.can_checkout && !closed.value && !empty.value && !submitting.value)
 
 async function place(confirmChange = false) {
+  if (submitting.value) return   // a double click (or a double tap) sends one order, not two
   touched.value = true
   problem.value = null
   if (Object.keys(errors.value).length) { await nextTick(); (document.querySelector('[aria-invalid="true"]') ?? document.querySelector('[data-testid="proof-error"]'))?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return }

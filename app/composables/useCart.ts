@@ -91,8 +91,17 @@ export function useCart() {
     try { await call('DELETE', '/coupon'); return { ok: true } } catch (e) { return { ok: false, message: apiFailure(e).message } } finally { busy.value = false }
   }
 
+  /**
+   * Keeps the contact details the customer is typing on the cart (quietly, no spinner, errors ignored) so the shop can follow up a cart that is left behind
+   * (Customers > Abandoned carts). Only for a browser that already has a cart; send only the pieces that are valid, the server refuses the whole call otherwise.
+   */
+  async function saveContact(contact: { name?: string; phone?: string; email?: string }) {
+    if (!import.meta.client || !readToken() || !Object.keys(contact).length) return
+    try { await call('PUT', '/contact', contact) } catch { /* optional: the order itself is never affected */ }
+  }
+
   /** After an order the server has already emptied the cart: just read it again. */
   async function afterOrder() { await refresh(undefined, true) }
 
-  return { cart, count, lines, warnings, loading, busy, loadError, drawerOpen, refresh, add, setQty, remove, applyCoupon, removeCoupon, afterOrder, token: readToken }
+  return { cart, count, lines, warnings, loading, busy, loadError, drawerOpen, refresh, add, setQty, remove, applyCoupon, removeCoupon, saveContact, afterOrder, token: readToken }
 }
