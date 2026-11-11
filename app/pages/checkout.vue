@@ -204,7 +204,8 @@ async function explain(f: ApiFailure) {
 }
 
 const showField = (k: string) => touched.value && errors.value[k]
-const showProofError = computed(() => (touched.value && errors.value.proof) || proofError.value)
+// what is wrong with the file the customer just chose comes before "please upload one" (a wrong file would otherwise still be told to upload a screenshot)
+const showProofError = computed(() => proofError.value || (touched.value && errors.value.proof))
 </script>
 
 <template>

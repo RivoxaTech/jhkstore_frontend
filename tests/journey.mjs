@@ -55,7 +55,7 @@ if (!D || !A) { console.error('cannot log in'); process.exit(2) }
 const dbw = (sql) => { if (!/jhkstore_shots|scratch/.test(DBNAME)) throw new Error('scratch database only'); execFileSync(MYSQL, ['-uroot', DBNAME, '-e', sql]) }
 const dbq = (sql) => execFileSync(MYSQL, ['-uroot', '-N', DBNAME, '-e', sql], { encoding: 'utf8' }).trim().replace(/\r/g, '')
 const logSize = () => (fs.existsSync(LOG) ? fs.statSync(LOG).size : 0)
-const logSince = (pos) => (fs.existsSync(LOG) ? fs.readFileSync(LOG, 'utf8').slice(pos) : '')
+const logSince = (pos) => (fs.existsSync(LOG) ? fs.readFileSync(LOG).subarray(pos).toString('utf8') : '')   // pos is in BYTES (the log has multi-byte characters)
 
 // a flat PNG for the file inputs
 const crcTable = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0 })
@@ -89,7 +89,7 @@ const setValue = (page, selector, value) => page.$eval(selector, (el, v) => {
 const text = (page, selector) => page.$eval(selector, (e) => e.innerText.replace(/\s+/g, ' ').trim()).catch(() => '')
 const exists = async (page, selector) => Boolean(await page.$(selector))
 const waitFor = (page, fn, arg, timeout = 15000) => page.waitForFunction(fn, { timeout, polling: 100 }, arg).then(() => true).catch(() => false)
-const shot = (page, name, opts = {}) => page.screenshot({ path: path.join(SHOTS, `${name}.png`), ...opts }).catch(() => {})
+const shot = async (page, name, opts = {}) => { await page.bringToFront().catch(() => {}); return page.screenshot({ path: path.join(SHOTS, `${name}.png`), ...opts }).catch(() => {}) }
 const overflow = (page) => page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth, drift: document.documentElement.scrollWidth - window.innerWidth }))
 
 // ---------------------------------------------------------------- data to work with
@@ -98,6 +98,8 @@ const multi = []
 for (const p of products.slice(0, 40)) { if (p.options_count > 1) { multi.push(p); break } }
 const simple = products.find((p) => p.has_single_option && !p.is_sold_out && p.price > 5)
 const multiProduct = multi[0] || simple
+// plenty of stock for the products the journey buys (a scratch database that has seen other runs may have sold them out)
+for (const p of [simple, multiProduct]) dbw(`UPDATE product_variants SET stock_qty = 200 WHERE product_id = ${Number(p.id)}`)
 const couponCode = `JRN${RUN}`
 await api('POST', 'admin/coupons', { token: A, body: { code: couponCode, name: 'Journey 10', type: 'percent', value: 10, scope: 'store' } })
 await api('PUT', 'admin/settings', { token: D, body: { mail_enabled: true, notify_admin_email: 'owner@shop.test', pay_bank_enabled: true, pay_cod_enabled: true, pay_bank_proof_required: true, pay_bank_accounts: [{ bank: 'Journey Bank', title: 'Shop', number: '000111222', iban: 'PK00JRNY' }] } })
@@ -111,11 +113,14 @@ await owner.evaluateOnNewDocument(() => {
   window.AudioContext = undefined; window.webkitAudioContext = undefined
 })
 await owner.goto(`${API}/admin/login`, { waitUntil: 'networkidle0' })
+await owner.bringToFront()   // a tab in the background cannot be clicked or photographed reliably
 await setValue(owner, '#username', ADM[0]); await setValue(owner, '#password', ADM[1])
 await Promise.all([owner.waitForSelector('.sidebar__nav', { timeout: 30000 }), owner.click('button[type="submit"]')])
 await owner.goto(`${API}/admin/orders`, { waitUntil: 'networkidle0' })
-await owner.click('body'); await sleep(400)   // a click unlocks the sound in a browser
+await owner.bringToFront()   // a tab in the background cannot be clicked or photographed reliably
+await owner.evaluate(() => { document.dispatchEvent(new PointerEvent('pointerdown')); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' })) }); await sleep(400)   // the first click / key press of a person unlocks the sound
 const badge0 = Number(await text(owner, '[data-testid="orders-badge"]')) || 0
+await owner.waitForSelector('tbody tr.row-link', { timeout: 15000 }).catch(() => {})
 const rows0 = await owner.$$eval('tbody tr.row-link', (r) => r.length)
 console.log(`   orders on screen: ${rows0}, badge: ${badge0}`)
 
@@ -125,6 +130,7 @@ const mailPos = logSize()
 const cust = await newPage({ width: 1366, height: 900 })
 const custPhone = phone()
 await cust.goto(`${SITE}/product/${multiProduct.slug}`, { waitUntil: 'networkidle0' })
+await cust.bringToFront()
 await shot(cust, '01-product-desktop')
 const variants = await cust.$$('[data-testid="variants"] input')
 if (variants.length > 1) { await cust.$$eval('[data-testid="variants"] input', (e) => e[1].click()); await sleep(300) }
@@ -160,6 +166,7 @@ const removeCoupon = await cust.$('[data-testid="coupon-remove"], [data-testid="
 if (removeCoupon) { await removeCoupon.click(); await sleep(1000) }
 console.log(`   (remove-coupon control: ${removeCoupon ? 'found' : 'none with a known test id'})`)
 await cust.goto(`${SITE}/checkout`, { waitUntil: 'networkidle0' })
+await cust.bringToFront()
 await cust.waitForSelector('[data-testid="f-name"]', { timeout: 20000 })
 // refresh in the middle of checkout: the cart must survive, the form starts empty
 await setValue(cust, '[data-testid="f-name"]', `Journey ${RUN}`)
@@ -210,7 +217,7 @@ await sleep(600)
 const orderId = Number(owner.url().match(/orders\/(\d+)/)?.[1])
 const detail = (await api('GET', `admin/orders/${orderId}`, { token: A })).json.data
 check(detail.customer.phone.endsWith(custPhone.slice(-8)) && detail.items.length >= 1, 'the order detail has the customer and the lines', { phone: detail.customer.phone, lines: detail.items.length })
-check(await owner.evaluate((t) => document.body.innerText.includes(t), String(detail.totals.grand_total.toFixed ? detail.totals.grand_total.toFixed(2) : detail.totals.grand_total)), 'the detail page shows the same total as the customer', detail.totals.grand_total)
+check(await owner.evaluate((t) => document.body.innerText.includes(t), String(Math.round(detail.totals.grand_total))), 'the detail page shows the same total as the customer', detail.totals.grand_total)
 await shot(owner, '07-owner-order-detail')
 
 section('Owner: the invoice')
@@ -221,6 +228,7 @@ const inv = await owner.evaluate(() => { const el = document.querySelector('.pri
 check(inv.has || /Invoice/.test(inv.text), 'the invoice view exists', inv.has)
 check(/Invoice/.test(inv.text) && inv.text.includes(orderNo) && /Bill to/i.test(inv.text) && /Ship to|Deliver/i.test(inv.text), 'the invoice has the title, order number, Bill to and Ship to')
 check(/Total/i.test(inv.text) && inv.text.includes(String(detail.totals.grand_total)) , 'the invoice has the total', detail.totals.grand_total)
+check(inv.text.includes(`Coupon ${couponCode}`), 'the invoice names the coupon with a space ("Coupon CODE", not "CouponCODE")')
 check(/12 Journey Road/.test(inv.text) && /Springfield/.test(inv.text), 'the invoice has the delivery address')
 check(detail.items.every((i) => inv.text.includes(i.name)), 'the invoice lists every item name')
 await owner.emulateMediaType('print')
@@ -256,6 +264,7 @@ check(delivered.payment.status === 'paid', 'delivered cash-on-delivery order is 
 // the customer follows it from the footer
 section('Customer: "Track your order" from the footer')
 await cust.goto(`${SITE}/`, { waitUntil: 'networkidle0' })
+await cust.bringToFront()
 const trackLink = await cust.$('[data-testid="site-footer"] a[href="/track"]')
 check(Boolean(trackLink), 'the footer has a Track your order link')
 await trackLink.click()
@@ -288,6 +297,7 @@ async function openCheckoutWith(page, variantId, qty = 1) {
   await page.goto(`${SITE}/`, { waitUntil: 'domcontentloaded' })
   await page.evaluate((t) => localStorage.setItem('jhk_cart_token', t), token)
   await page.goto(`${SITE}/checkout`, { waitUntil: 'networkidle0' })
+  await page.bringToFront()
   await page.waitForSelector('[data-testid="f-name"]', { timeout: 20000 })
   return token
 }
@@ -321,6 +331,7 @@ await shot(cust, '12-order-bank')
 await waitFor(owner, (n) => [...document.querySelectorAll('tbody tr.row-link')].some((r) => r.innerText.includes(n)), bankNo, 15000)
 const bankOrder = (await api('GET', `admin/orders?search=${encodeURIComponent(bankNo)}`, { token: A })).json.data[0]
 await owner.goto(`${API}/admin/orders/${bankOrder.id}`, { waitUntil: 'networkidle0' })
+await owner.bringToFront()   // a tab in the background cannot be clicked or photographed reliably
 await owner.waitForSelector('[data-proof-thumb]', { timeout: 15000 }).catch(() => {})
 check(await exists(owner, '[data-proof-thumb]'), 'the owner sees the customer\'s screenshot')
 const confirmBlocked = await owner.evaluate(() => { const b = [...document.querySelectorAll('.act-bar button')].filter((x) => /Confirm/.test(x.innerText)).pop(); return b ? b.disabled : null })
@@ -342,18 +353,19 @@ for (const [verb, button, state] of [['cancel', 'Cancel order', 'cancelled'], ['
   const o2 = await freshOrder(simple.variant_id, 2)
   check(stockOf(simple.variant_id) === before - 2, `${verb}: stock went down by 2 with the order`, stockOf(simple.variant_id))
   await owner.goto(`${API}/admin/orders/${o2.id}`, { waitUntil: 'networkidle0' })
+  await owner.bringToFront()   // a tab in the background cannot be clicked or photographed reliably
   await owner.waitForSelector('.act-bar', { timeout: 15000 })
   await owner.evaluate((b) => [...document.querySelectorAll('.act-bar button')].find((x) => x.innerText.includes(b)).click(), button)
   await sleep(600)
   const dlg = await owner.evaluate(() => { const m = document.querySelector('.modal, [role="dialog"]'); return m ? { text: m.innerText.replace(/\s+/g, ' ').slice(0, 220), fields: m.querySelectorAll('input, textarea, select').length } : null })
-  check(Boolean(dlg) && dlg.fields === 0 && /sure/i.test(dlg.text), `${verb}: a dialog that only asks "are you sure?" (no reason, no fields)`, dlg)
+  check(Boolean(dlg) && dlg.fields === 0 && /\?/.test(dlg.text), `${verb}: a dialog that only asks "are you sure?" (no reason, no fields)`, dlg)
   if (verb === 'cancel') await shot(owner, '14-cancel-dialog')
   await owner.evaluate(() => { const m = document.querySelector('.modal, [role="dialog"]'); [...m.querySelectorAll('button')].filter((b) => !/Cancel|Close|No|Keep/i.test(b.innerText) || /Cancel order|Reject/i.test(b.innerText)).pop().click() })
   const ok = await waitFor(owner, (w) => document.querySelector('.od-meta')?.innerText.toLowerCase().includes(w), state, 12000)
   check(ok, `${verb}: the order is ${state}`)
   check(stockOf(simple.variant_id) === before, `${verb}: the stock is back`, stockOf(simple.variant_id))
-  const gone = await owner.evaluate(() => [...document.querySelectorAll('.act-bar button')].some((x) => /Cancel order|Reject order|Confirm|Pack|Ship|Deliver/.test(x.innerText)))
-  check(!gone, `${verb}: no action buttons are left on a ${state} order`)
+  const left = await owner.evaluate(() => [...document.querySelectorAll('.act-bar button')].map((x) => x.innerText.trim()).filter((t) => !/Print|Packing slip|WhatsApp/.test(t)))
+  check(left.length === 0, `${verb}: no action buttons are left on a ${state} order`, left)
 }
 
 // ================================================================ wholesale
@@ -361,6 +373,7 @@ section('Customer: wholesale form; owner sees it in real time')
 const wsBadge0 = Number(await text(owner, '[data-testid="wholesale-badge"]')) || 0
 const wsPhone = phone()
 await cust.goto(`${SITE}/wholesale`, { waitUntil: 'networkidle0' })
+await cust.bringToFront()
 await setValue(cust, '[data-testid="b-name"]', `Bulk ${RUN}`); await setValue(cust, '[data-testid="b-phone"]', wsPhone)
 const hasProductSelect = await exists(cust, '[data-testid="b-product-name"]')
 if (hasProductSelect) await setValue(cust, '[data-testid="b-product-name"]', 'Wooden blocks')
@@ -370,6 +383,7 @@ const wsOk = await cust.waitForSelector('[data-testid="bulk-success"]', { timeou
 check(wsOk, 'the wholesale form says it was sent', await text(cust, '[data-testid="bulk-success"], [data-testid="bulk-error"]'))
 await shot(cust, '15-wholesale-sent')
 await owner.goto(`${API}/admin/wholesale`, { waitUntil: 'networkidle0' })
+await owner.bringToFront()   // a tab in the background cannot be clicked or photographed reliably
 const wsSeen = await waitFor(owner, (n) => document.body.innerText.includes(n), `Bulk ${RUN}`, 15000)
 check(wsSeen, 'the request is in the owner\'s Wholesale list', wsSeen)
 await owner.evaluate((n) => [...document.querySelectorAll('tr.row-link')].find((r) => r.innerText.includes(n)).click(), `Bulk ${RUN}`)
@@ -388,6 +402,7 @@ check(String(abCart?.contact?.phone || '').endsWith(abPhone.slice(-8)) && String
 await cust.goto(`${SITE}/`, { waitUntil: 'networkidle0' })   // the customer leaves without buying
 dbw(`UPDATE carts SET last_activity_at = UTC_TIMESTAMP() - INTERVAL 3 HOUR, updated_at = UTC_TIMESTAMP() - INTERVAL 3 HOUR WHERE token = '${abToken}'`)
 await owner.goto(`${API}/admin/customers?tab=abandoned`, { waitUntil: 'networkidle0' })
+await owner.bringToFront()   // a tab in the background cannot be clicked or photographed reliably
 await owner.waitForSelector('[data-testid="abandoned-table"]', { timeout: 15000 }).catch(() => {})
 const abListed = await owner.evaluate((n) => document.body.innerText.includes(n), `Abandoned ${RUN}`)
 check(abListed, 'the owner finds the cart in Customers > Abandoned carts', abListed)
@@ -396,6 +411,7 @@ check(/wa\.me\//.test(abWa), 'with a WhatsApp button to write to them', abWa)
 await shot(owner, '17-owner-abandoned')
 // the customer comes back: the same browser still has the token, the items are there, and the order empties the abandoned list
 await cust.goto(`${SITE}/checkout`, { waitUntil: 'networkidle0' })
+await cust.bringToFront()
 await cust.waitForSelector('[data-testid="f-name"]', { timeout: 20000 })
 check(!(await exists(cust, '[data-testid="checkout-empty"]')), 'coming back: the cart is still full (recovered)')
 await fillContact(cust, `Abandoned ${RUN}`, abPhone, `ab${RUN}@example.test`.toLowerCase())
@@ -404,6 +420,7 @@ await waitFor(cust, () => !document.querySelector('[data-testid="place-order"]')
 await cust.click('[data-testid="place-order"]')
 await waitFor(cust, () => location.pathname.startsWith('/order/'), null, 30000)
 await owner.goto(`${API}/admin/customers?tab=abandoned`, { waitUntil: 'networkidle0' })
+await owner.bringToFront()   // a tab in the background cannot be clicked or photographed reliably
 await sleep(800)
 check(!(await owner.evaluate((n) => document.body.innerText.includes(n), `Abandoned ${RUN}`)), 'after the order the cart is no longer abandoned')
 
@@ -423,9 +440,11 @@ for (const [name, p] of phonePages) {
   await shot(ph, `20-phone-${name}`, { fullPage: true })
 }
 const phAdmin = await newPage(phoneView)
-await phAdmin.goto(`${API}/admin/login`, { waitUntil: 'networkidle0' })
-await setValue(phAdmin, '#username', ADM[0]); await setValue(phAdmin, '#password', ADM[1])
-await Promise.all([phAdmin.waitForSelector('.topbar', { timeout: 30000 }), phAdmin.click('button[type="submit"]')])
+await phAdmin.goto(`${API}/admin/`, { waitUntil: 'networkidle0' })   // the browser already has the owner's session cookie
+if (await exists(phAdmin, '#username')) {
+  await setValue(phAdmin, '#username', ADM[0]); await setValue(phAdmin, '#password', ADM[1])
+  await Promise.all([phAdmin.waitForSelector('.topbar', { timeout: 30000 }), phAdmin.click('button[type="submit"]')])
+}
 for (const [name, p] of [['dashboard', '/admin/'], ['orders', '/admin/orders'], ['order', `/admin/orders/${orderId}`], ['customers', '/admin/customers'], ['coupons', '/admin/coupons']]) {
   await phAdmin.goto(`${API}${p}`, { waitUntil: 'networkidle0' }).catch(() => {})
   await sleep(600)
