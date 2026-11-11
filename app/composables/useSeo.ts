@@ -24,10 +24,6 @@ export function useSeo(input: SeoInput | (() => SeoInput)) {
   const expand = (ld: Record<string, any>) => (ld.__breadcrumbs
     ? { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: (ld.__breadcrumbs as { name: string; path: string }[]).map((it, n) => ({ '@type': 'ListItem', position: n + 1, name: it.name, item: `${siteUrl}${it.path}` })) }
     : ld)
-  // a breadcrumbLd() marker becomes the real BreadcrumbList here (the site address is read once, while the component is being set up)
-  const expand = (ld: Record<string, any>) => (ld.__breadcrumbs
-    ? { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: (ld.__breadcrumbs as { name: string; path: string }[]).map((it, n) => ({ '@type': 'ListItem', position: n + 1, name: it.name, item: `${siteUrl}${it.path}` })) }
-    : ld)
 
   const title = computed(() => {
     const i = get()
