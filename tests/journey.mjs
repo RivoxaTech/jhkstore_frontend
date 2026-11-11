@@ -368,6 +368,48 @@ for (const [verb, button, state] of [['cancel', 'Cancel order', 'cancelled'], ['
   check(left.length === 0, `${verb}: no action buttons are left on a ${state} order`, left)
 }
 
+// ================================================================ owner: status menu (any later step), dashboard cards, packing slip
+section('Owner: a confirmed order can jump to any later step; Sales / Revenue / Orders / Wholesale cards; the packing slip says what to collect')
+async function dashCards() {
+  await owner.goto(`${API}/admin/`, { waitUntil: 'networkidle0' })
+  await owner.bringToFront()
+  await owner.waitForSelector('[data-testid="kpis"] .kpi', { timeout: 15000 })
+  await sleep(500)
+  return owner.$$eval('[data-testid="kpis"] .kpi, [data-testid="kpis"] a', (els) => els.map((e) => e.innerText.replace(/\s+/g, ' ').trim()).filter(Boolean))
+}
+const cardsBefore = await dashCards()
+const labelsOk = ['Sales', 'Revenue', 'Orders', 'Wholesale'].every((w) => cardsBefore.some((c) => c.startsWith(w)))
+check(labelsOk && !cardsBefore.some((c) => /^Pending orders|^Average order/.test(c)), 'the dashboard has Sales, Revenue, Orders and Wholesale cards (no Pending / Average card)', cardsBefore.map((c) => c.slice(0, 40)))
+const jump = await freshOrder(simple.variant_id, 2)
+await api('POST', `admin/orders/${jump.id}/status`, { token: A, body: { status: 'confirmed' } })
+const revenueBefore = (await api('GET', 'admin/dashboard?range=all', { token: A })).json.orders.kpis.revenue
+await owner.goto(`${API}/admin/orders/${jump.id}`, { waitUntil: 'networkidle0' })
+await owner.bringToFront()
+await owner.waitForSelector('[data-testid="status-menu-btn"]', { timeout: 15000 })
+await owner.click('[data-testid="status-menu-btn"]')
+await sleep(300)
+const offered = await owner.$$eval('[data-status-option]', (o) => o.map((x) => x.getAttribute('data-status-option')))
+check(['packed', 'shipped', 'delivered'].every((s) => offered.includes(s)), 'the status menu of a confirmed order offers packed, shipped and delivered at once', offered)
+await shot(owner, '18-status-menu')
+await owner.evaluate(() => document.querySelector('[data-status-option="delivered"]').click())
+const jumped = await waitFor(owner, () => /delivered/i.test(document.querySelector('.od-meta')?.innerText || ''), null, 12000)
+check(jumped, 'choosing Delivered marks the order delivered directly (no packing / shipping steps)')
+const revenueAfter = (await api('GET', 'admin/dashboard?range=all', { token: A })).json.orders.kpis.revenue
+check(Math.abs(revenueAfter - revenueBefore - jump.totals.grand_total) < 0.01, 'a delivered cash order is now Revenue (received)', { before: revenueBefore, after: revenueAfter, order: jump.totals.grand_total })
+// the packing slip: prices and what the courier collects
+const slipOrder = await freshOrder(simple.variant_id, 1)
+await owner.goto(`${API}/admin/orders/${slipOrder.id}`, { waitUntil: 'networkidle0' })
+await owner.bringToFront()
+await owner.waitForSelector('.act-bar', { timeout: 15000 })
+await owner.evaluate(() => { window.print = () => {}; [...document.querySelectorAll('.act-bar button')].find((x) => x.innerText.includes('Packing slip')).click() })
+await sleep(500)
+const slipText = await owner.evaluate(() => document.querySelector('.print-sheet').textContent.replace(/\s+/g, ' '))
+check(/Packing slip/.test(slipText) && /Cash on delivery/.test(slipText) && /Collect/.test(slipText) && /To pay/.test(slipText) && !/Bill to/.test(slipText), 'the packing slip shows the items with prices and "Collect ... from the customer"', slipText.slice(0, 200))
+await owner.emulateMediaType('print')
+const sheet = await owner.evaluate(() => { const s = document.querySelector('.print-sheet'); const top = s.querySelector('.ps-top').getBoundingClientRect(); const contact = s.querySelector('.ps-contact').getBoundingClientRect(); return { logoOrName: Boolean(s.querySelector('.ps-logo, .ps-name')), contactOnRight: contact.right > top.right - 8 && contact.left > top.left + top.width / 2, hasBrowserTitle: /JHK Store Admin/.test(s.textContent) } })
+await owner.emulateMediaType('screen')
+check(sheet.logoOrName && sheet.contactOnRight, 'print layout: the logo on the left, phone and e-mail on the right', sheet)
+
 // ================================================================ wholesale
 section('Customer: wholesale form; owner sees it in real time')
 const wsBadge0 = Number(await text(owner, '[data-testid="wholesale-badge"]')) || 0

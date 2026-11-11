@@ -48,6 +48,13 @@
 }
 
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: clip; }
+/* thin, calm scroll bars (the page and every scrolling box): a slim rounded thumb in a soft tint of the theme colour, no track */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--c-primary) 45%, white) transparent; }
+html { scrollbar-gutter: auto; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--c-primary) 45%, white); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-primary); background-clip: content-box; }
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 body {

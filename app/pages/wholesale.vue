@@ -79,7 +79,7 @@ async function submit() {
             <div><label class="field-label" for="b-business">Business name <span class="font-normal text-muted">(optional)</span></label><input id="b-business" v-model="form.business_name" class="field-input" autocomplete="organization"></div>
             <div class="sm:col-span-2">
               <label class="field-label" for="b-product">Which toy? *</label>
-              <select id="b-product" v-model="form.product" class="field-select" data-testid="b-product"><option value="">Something else (describe it below)</option><option v-for="p in products" :key="p.id" :value="String(p.id)">{{ p.name }}</option></select>
+              <ProductPicker v-model="form.product" :products="products" />
             </div>
             <div v-if="!chosen" class="sm:col-span-2"><label class="field-label" for="b-pname">What are you looking for? *</label><input id="b-pname" v-model="form.product_name" class="field-input" placeholder="For example: wooden puzzles for a nursery" :aria-invalid="!!fieldErrors.product_name" data-testid="b-product-name"><p v-if="fieldErrors.product_name" class="field-error">{{ fieldErrors.product_name }}</p></div>
             <div><label class="field-label" for="b-qty">Quantity *</label><input id="b-qty" v-model="form.quantity" type="number" min="1" inputmode="numeric" class="field-input" :aria-invalid="!!fieldErrors.quantity" data-testid="b-quantity"><p v-if="fieldErrors.quantity" class="field-error">{{ fieldErrors.quantity }}</p></div>

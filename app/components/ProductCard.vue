@@ -14,7 +14,6 @@ const cart = useCart()
 const toast = useToast()
 const { isClosed } = useSettings()
 const adding = ref(false)
-const grid = useGrid()
 
 const href = computed(() => `/product/${props.product.slug}`)
 const soldOut = computed(() => props.product.is_sold_out || !props.product.in_stock)
@@ -47,20 +46,22 @@ async function addToCart() {
       <span v-if="soldOut" class="absolute inset-0 grid place-items-center bg-white/60 text-sm font-bold tracking-wide text-ink">SOLD OUT</span>
     </NuxtLink>
 
-    <div class="flex flex-1 flex-col p-3 sm:p-3.5">
+    <div class="@container flex flex-1 flex-col p-3 sm:p-3.5">
       <h3 class="text-[13.5px] font-semibold leading-snug"><NuxtLink :to="href" class="hover:text-primary-dark">{{ product.name }}</NuxtLink></h3>
       <p class="clamp-1 mt-1 min-h-[1.2rem] text-[12px] leading-[1.2rem] text-muted" data-testid="card-description">{{ product.short_description }}</p>
 
-      <!-- the old price (light, struck through) in its own line, the price to pay under it: calm sizes that shrink on a phone -->
-      <!-- one product per row (a phone, full width): the price and the old price share a line; several per row: the old price above the price -->
-      <div class="mt-2 flex" :class="grid.cols.value === 1 ? 'flex-row items-baseline gap-2 sm:flex-col-reverse sm:gap-0' : 'flex-col-reverse'" data-testid="card-prices">
-        <p class="truncate text-[13px] font-semibold leading-snug sm:text-[14.5px]" data-testid="card-price">{{ product.show_starting_at ? 'From ' : '' }}{{ money(product.price) }}</p>
-        <p class="truncate text-[11px] leading-[1.05rem] text-muted/70 sm:min-h-[1.05rem] sm:text-[12px]" :class="grid.cols.value === 1 ? '' : 'min-h-[1.05rem]'" data-testid="card-compare">
-          <s v-if="product.compare_price && product.compare_price > (product.price ?? 0)">{{ money(product.compare_price) }}</s>
-        </p>
+      <!-- the price to pay and the old price (light, struck through): on a card wide enough (a container query on the card, not on the screen) they share ONE line;
+           on a narrow card (two per row on a phone) the old price sits above the price -->
+      <div class="mt-2">
+        <div class="flex flex-col-reverse @min-[225px]:flex-row @min-[225px]:flex-wrap @min-[225px]:items-baseline @min-[225px]:gap-x-2" data-testid="card-prices">
+          <p class="truncate text-[13px] font-semibold leading-snug sm:text-[14.5px]" data-testid="card-price">{{ product.show_starting_at ? 'From ' : '' }}{{ money(product.price) }}</p>
+          <p class="truncate text-[11px] leading-[1.05rem] text-muted/70 min-h-[1.05rem] @min-[225px]:min-h-0 sm:text-[12px]" data-testid="card-compare">
+            <s v-if="product.compare_price && product.compare_price > (product.price ?? 0)">{{ money(product.compare_price) }}</s>
+          </p>
+        </div>
       </div>
 
-      <div class="mt-auto flex pt-3" :class="grid.cols.value === 2 ? 'justify-center sm:justify-end' : 'justify-end'">
+      <div class="mt-auto flex justify-center pt-3 @min-[225px]:justify-end">
         <button
           type="button" class="btn btn-primary btn-sm !h-[30px] !px-3 text-[11.5px]" :disabled="soldOut || adding || (isClosed && !multi)" data-testid="add-to-cart"
           :aria-label="soldOut ? `Sold out, ${product.name}` : multi ? `Choose option, ${product.name}` : `Add to Cart, ${product.name}`" @click="addToCart"

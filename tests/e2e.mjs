@@ -399,7 +399,7 @@ try {
     await click(page, '[data-testid="bulk-submit"]'); await sleep(300)
     check(await exists(page, '[aria-invalid="true"]'), 'S9 wholesale: an empty enquiry is not sent')
     await fill(page, '[data-testid="b-name"]', 'Bulk Buyer'); await fill(page, '[data-testid="b-phone"]', randomPhone())
-    await fill(page, '[data-testid="b-product"]', String(catalogue[0].id)); await fill(page, '[data-testid="b-quantity"]', '120')
+    await click(page, '[data-testid="b-product"]'); await click(page, `[data-testid="b-product-list"] [data-value="${catalogue[0].id}"]`); await fill(page, '[data-testid="b-quantity"]', '120')
     await click(page, '[data-testid="bulk-submit"]')
     check(await waitFor(page, () => !!document.querySelector('[data-testid="bulk-success"]')) && /^WS-/.test(await text(page, '[data-testid="bulk-reference"]')), 'S9 wholesale: the enquiry is sent and the reference is shown', await exists(page, '[data-testid="bulk-reference"]') ? await text(page, '[data-testid="bulk-reference"]') : await exists(page, '[data-testid="bulk-error"]') ? await text(page, '[data-testid="bulk-error"]') : '')
     check(await page.evaluate(() => document.querySelectorAll('input[name="hp_extra"]').length) === 0, 'S9 wholesale: (the form is gone after success)')
