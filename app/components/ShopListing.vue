@@ -97,7 +97,7 @@ defineExpose({ total })
     </nav>
 
     <!-- the number of toys and the sort, on one line -->
-    <div class="mt-4 flex items-center justify-between gap-2 border-y border-line/80 py-2.5">
+    <div class="mt-3 flex items-center justify-between gap-2 border-y border-line/80 py-2 sm:mt-4 sm:py-2.5">
       <p class="text-sm text-muted" data-testid="result-count" aria-live="polite"><template v-if="status === 'pending'">Loading...</template><template v-else><strong class="text-ink">{{ total }}</strong> {{ total === 1 ? 'toy' : 'toys' }}<template v-if="q"> for "{{ q }}"</template></template></p>
       <div class="flex items-center gap-1.5">
         <SortMenu :model-value="sort" :options="SORTS" @update:model-value="setSort" />
@@ -105,7 +105,7 @@ defineExpose({ total })
       </div>
     </div>
 
-    <div class="mt-6 min-w-0">
+    <div class="mt-4 min-w-0 sm:mt-6">
       <ErrorState v-if="error && !products.length" :message="apiFailure(error).message" @retry="refresh()" />
       <template v-else>
         <ProductGrid :products="products" :loading="status === 'pending' && !products.length" :skeletons="8" :eager-count="4" />

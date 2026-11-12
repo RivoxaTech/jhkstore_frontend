@@ -26,7 +26,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
 <template>
   <header
     class="sticky top-0 z-40 transition-[background-color,box-shadow,border-color] duration-200"
-    :class="clear ? 'border-b border-transparent bg-gradient-to-b from-white/75 via-white/35 to-transparent' : 'border-b border-line/70 bg-white/92 shadow-[0_6px_24px_-18px_rgb(15_23_42/0.35)] backdrop-blur-md'"
+    :class="clear ? 'border-b border-transparent bg-gradient-to-b from-white/75 via-white/35 to-transparent' : ['border-b border-line/70 bg-white/92 shadow-[0_6px_24px_-18px_rgb(15_23_42/0.35)] backdrop-blur-md', menuOpen ? '' : 'rounded-b-[22px] md:rounded-b-[26px]']"
     data-testid="site-header" :data-clear="clear"
   >
     <div class="container-page">
@@ -66,7 +66,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
     </div>
 
     <!-- phone: the menu -->
-    <nav v-if="menuOpen" id="mobile-menu" class="absolute inset-x-0 top-full border-t border-line bg-white shadow-[0_18px_30px_-18px_rgb(15_23_42/0.4)] md:hidden" aria-label="Main">
+    <nav v-if="menuOpen" id="mobile-menu" class="absolute inset-x-0 top-full rounded-b-[22px] border-t border-line bg-white shadow-[0_18px_30px_-18px_rgb(15_23_42/0.4)] md:hidden" aria-label="Main">
       <ul class="container-page py-2">
         <li v-for="l in site.nav" :key="l.to">
           <NuxtLink :to="l.to" class="block rounded-xl px-3 py-3 text-base font-medium" :class="isActive(l.to) ? 'bg-primary-soft text-primary-dark' : 'text-ink'">{{ l.label }}</NuxtLink>

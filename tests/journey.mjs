@@ -502,6 +502,23 @@ await phAdmin.goto(`${API}/admin/orders/${orderId}`, { waitUntil: 'networkidle0'
 const bar = await phAdmin.$$eval('.act-bar .btn', (bs) => bs.map((b) => ({ t: b.getAttribute('title') || b.innerText.trim(), w: Math.round(b.getBoundingClientRect().width) })))
 const iconOnly = bar.filter((b) => /Print invoice|Packing slip|WhatsApp/.test(b.t))
 check(iconOnly.length >= 2 && iconOnly.every((b) => b.w <= 44), 'phone admin: print, packing slip and WhatsApp are icon buttons on the order page', bar)
+// the items of the order: compact lines (picture and name, then quantity x price and the total), no table head
+const items = await phAdmin.$eval('.od-items', (t) => ({ row: getComputedStyle(t.querySelector('tbody tr')).display, head: getComputedStyle(t.querySelector('thead')).display, w: t.getBoundingClientRect().width, vw: document.documentElement.clientWidth })).catch(() => null)
+check(items && items.row === 'grid' && items.head === 'none' && items.w <= items.vw, 'phone admin: the items of an order are compact lines that fit the screen', items)
+// Export sits in the same row as the title and the path; From and To share one row
+await phAdmin.goto(`${API}/admin/orders`, { waitUntil: 'networkidle0' }); await sleep(600)
+const headRow = await phAdmin.evaluate(() => { const h = document.querySelector('.page-head h1').getBoundingClientRect(); const b = document.querySelector('[data-testid="export-orders"]').getBoundingClientRect(); const f = document.querySelector('input[aria-label="From date"]').getBoundingClientRect(); const t = document.querySelector('input[aria-label="To date"]').getBoundingClientRect(); return { h1Top: Math.round(h.top), exportTop: Math.round(b.top), exportBottom: Math.round(b.bottom), fromTop: Math.round(f.top), toTop: Math.round(t.top), fromRight: Math.round(f.right), toLeft: Math.round(t.left) } })
+check(headRow.exportTop < headRow.h1Top + 40 && headRow.exportBottom < headRow.h1Top + 70, 'phone admin: Export CSV is in the same row as the title and the path', headRow)
+check(Math.abs(headRow.fromTop - headRow.toTop) <= 2 && headRow.toLeft > headRow.fromRight, 'phone admin: From and To are on one row', headRow)
+// customers keep the table (sideways scroll inside the box), with a copy icon beside the phone and the e-mail
+await phAdmin.goto(`${API}/admin/customers`, { waitUntil: 'networkidle0' }); await sleep(600)
+const custTable = await phAdmin.evaluate(() => ({ row: getComputedStyle(document.querySelector('[data-testid="customers-table"] tbody tr')).display, copies: document.querySelectorAll('[data-testid="customers-table"] [data-testid="copy"]').length }))
+check(custTable.row === 'table-row' && custTable.copies >= 2, 'phone admin: customers stay a table, with copy icons for the phone and the e-mail', custTable)
+// the shop: the old price comes first, then the price; the page header is compact
+await ph.goto(`${SITE}/shop`, { waitUntil: 'networkidle0' }); await sleep(600)
+const shopTop = await ph.evaluate(() => { const c = [...document.querySelectorAll('[data-testid="card-prices"]')].find((p) => p.querySelector('s')); const kids = c ? [...c.children].map((e) => e.dataset.testid) : []; return { kids, header: Math.round(document.querySelector('[data-testid="page-header"]').getBoundingClientRect().height) } })
+check(shopTop.kids[0] === 'card-compare' && shopTop.kids[1] === 'card-price', 'shop card: the old price comes first, then the price', shopTop)
+check(shopTop.header <= 120, 'phone shop: the page header is compact', shopTop)
 
 fs.writeFileSync(path.join(SHOTS, 'journey-state.json'), JSON.stringify({ orderNo, orderId, custPhone, couponCode, RUN }))
 console.log(`\nscreenshots: ${SHOTS}`)

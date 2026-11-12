@@ -16,6 +16,6 @@ useSeo(() => ({
 <template>
   <div class="page-wash">
     <PageHeader :title="q ? `Results for &quot;${q}&quot;` : 'Shop all toys'" :crumbs="[{ name: 'Home', path: '/' }, { name: 'Shop' }]" />
-    <div class="container-page pb-8 pt-7"><ShopListing /></div>
+    <div class="container-page pb-6 pt-3.5 sm:pb-8 sm:pt-7"><ShopListing /></div>
   </div>
 </template>

@@ -50,9 +50,9 @@ useSeo(() => ({
   <div class="page-wash">
     <PageHeader :title="content.title" :subtitle="content.lead ? fill(content.lead) : undefined" :crumbs="[{ name: 'Home', path: '/' }, { name: content.title }]" />
 
-    <div class="container-page pb-4 pt-10 sm:pt-14">
+    <div class="container-page pb-3 pt-5 sm:pb-4 sm:pt-12">
       <article class="mx-auto max-w-5xl divide-y divide-line/70">
-        <section v-for="(sec, si) in sections" :key="si" class="grid gap-3 py-8 first:pt-0 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-12 lg:py-10" :aria-label="sec.title || undefined">
+        <section v-for="(sec, si) in sections" :key="si" class="grid gap-2 py-5 first:pt-0 sm:gap-3 sm:py-8 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-12 lg:py-10" :aria-label="sec.title || undefined">
           <h2 v-if="sec.title" class="text-[1.35rem] font-semibold leading-snug lg:sticky lg:top-28 lg:self-start">{{ fill(sec.title) }}</h2>
           <div class="prose-page min-w-0 max-w-[68ch]" :class="sec.title ? '' : 'lg:col-span-2 lg:max-w-none'">
             <template v-for="(b, i) in sec.blocks" :key="i">
@@ -80,7 +80,7 @@ useSeo(() => ({
         </section>
       </article>
 
-      <div v-if="cta" class="mx-auto mt-6 max-w-5xl overflow-hidden rounded-[26px] bg-primary-soft px-6 py-10 text-center sm:px-10 sm:py-12">
+      <div v-if="cta" class="mx-auto mt-4 max-w-5xl overflow-hidden rounded-[26px] bg-primary-soft px-6 py-8 text-center sm:mt-6 sm:px-10 sm:py-12">
         <p class="text-[clamp(1.4rem,2.6vw,1.9rem)] font-semibold leading-snug">{{ fill(cta.text) }}</p>
         <NuxtLink :to="cta.to" class="btn btn-primary btn-lg mt-5">{{ cta.button }} <ArrowRight :size="18" /></NuxtLink>
       </div>

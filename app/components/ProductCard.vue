@@ -50,14 +50,14 @@ async function addToCart() {
       <h3 class="text-[13.5px] font-semibold leading-snug"><NuxtLink :to="href" class="hover:text-primary-dark">{{ product.name }}</NuxtLink></h3>
       <p class="clamp-1 mt-1 min-h-[1.2rem] text-[12px] leading-[1.2rem] text-muted" data-testid="card-description">{{ product.short_description }}</p>
 
-      <!-- the price to pay and the old price (light, struck through): on a card wide enough (a container query on the card, not on the screen) they share ONE line;
-           on a narrow card (two per row on a phone) the old price sits above the price -->
+      <!-- the old price (light, struck through) FIRST, then the price to pay: on a card wide enough (a container query on the card, not on the screen) they share
+           ONE line; on a narrow card (two per row on a phone) the old price sits above the price -->
       <div class="mt-2">
-        <div class="flex flex-col-reverse @min-[225px]:flex-row @min-[225px]:flex-wrap @min-[225px]:items-baseline @min-[225px]:gap-x-2" data-testid="card-prices">
-          <p class="truncate text-[13px] font-semibold leading-snug sm:text-[14.5px]" data-testid="card-price">{{ product.show_starting_at ? 'From ' : '' }}{{ money(product.price) }}</p>
+        <div class="flex flex-col @min-[225px]:flex-row @min-[225px]:flex-wrap @min-[225px]:items-baseline @min-[225px]:gap-x-2" data-testid="card-prices">
           <p class="truncate text-[11px] leading-[1.05rem] text-muted/70 min-h-[1.05rem] @min-[225px]:min-h-0 sm:text-[12px]" data-testid="card-compare">
             <s v-if="product.compare_price && product.compare_price > (product.price ?? 0)">{{ money(product.compare_price) }}</s>
           </p>
+          <p class="truncate text-[13px] font-semibold leading-snug sm:text-[14.5px]" data-testid="card-price">{{ product.show_starting_at ? 'From ' : '' }}{{ money(product.price) }}</p>
         </div>
       </div>
 

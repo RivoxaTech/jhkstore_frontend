@@ -8,10 +8,10 @@ defineProps<{ title: string; subtitle?: string; crumbs: { name: string; path?: s
 
 <template>
   <header class="border-b border-line/60 bg-primary-soft/55" data-testid="page-header">
-    <div class="container-page py-8 sm:py-11">
+    <div class="container-page py-4 sm:py-9 lg:py-11">
       <Breadcrumbs :items="crumbs" />
-      <h1 class="mt-3 text-[clamp(1.9rem,4vw,3rem)] font-semibold leading-tight">{{ title }}</h1>
-      <p v-if="subtitle" class="mt-2.5 max-w-2xl text-[16px] text-ink/75">{{ subtitle }}</p>
+      <h1 class="mt-1.5 text-[clamp(1.55rem,4vw,3rem)] font-semibold leading-tight sm:mt-3">{{ title }}</h1>
+      <p v-if="subtitle" class="mt-1.5 max-w-2xl text-[15px] leading-snug text-ink/75 sm:mt-2.5 sm:text-[16px]">{{ subtitle }}</p>
       <slot />
     </div>
   </header>
