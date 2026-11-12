@@ -494,6 +494,14 @@ for (const [name, p] of [['dashboard', '/admin/'], ['orders', '/admin/orders'], 
   check(o.drift <= 1, `phone admin ${name}: no sideways scroll of the page`, o)
   await shot(phAdmin, `21-phone-admin-${name}`)
 }
+// on a phone the orders are cards, and the order page's action bar is icon buttons with one short main button
+await phAdmin.goto(`${API}/admin/orders`, { waitUntil: 'networkidle0' }); await sleep(600)
+const rowDisplay = await phAdmin.$eval('tbody tr', (tr) => getComputedStyle(tr).display).catch(() => '')
+check(rowDisplay === 'grid', 'phone admin: an order in the list is a card (number, total, customer, date, payment, status)', rowDisplay)
+await phAdmin.goto(`${API}/admin/orders/${orderId}`, { waitUntil: 'networkidle0' }); await sleep(600)
+const bar = await phAdmin.$$eval('.act-bar .btn', (bs) => bs.map((b) => ({ t: b.getAttribute('title') || b.innerText.trim(), w: Math.round(b.getBoundingClientRect().width) })))
+const iconOnly = bar.filter((b) => /Print invoice|Packing slip|WhatsApp/.test(b.t))
+check(iconOnly.length >= 2 && iconOnly.every((b) => b.w <= 44), 'phone admin: print, packing slip and WhatsApp are icon buttons on the order page', bar)
 
 fs.writeFileSync(path.join(SHOTS, 'journey-state.json'), JSON.stringify({ orderNo, orderId, custPhone, couponCode, RUN }))
 console.log(`\nscreenshots: ${SHOTS}`)
