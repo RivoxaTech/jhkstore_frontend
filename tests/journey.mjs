@@ -419,6 +419,11 @@ await cust.bringToFront()
 await setValue(cust, '[data-testid="b-name"]', `Bulk ${RUN}`); await setValue(cust, '[data-testid="b-phone"]', wsPhone)
 const hasProductSelect = await exists(cust, '[data-testid="b-product-name"]')
 if (hasProductSelect) await setValue(cust, '[data-testid="b-product-name"]', 'Wooden blocks')
+// the form order: business name, then the BRN (optional), then the quantity, then the toy
+const formOrder = await cust.$$eval('[data-testid="bulk-form"] input:not(.hp-field input), [data-testid="bulk-form"] button', (els) => els.map((e) => e.id || e.getAttribute('data-testid') || '').filter(Boolean))
+const iBiz = formOrder.indexOf('b-business'), iBrn = formOrder.indexOf('b-brn'), iQty = formOrder.indexOf('b-qty'), iToy = formOrder.findIndex((x) => /b-product|b-pname/.test(x))
+check(iBiz >= 0 && iBrn === iBiz + 1 && iQty === iBrn + 1 && (iToy < 0 || iToy > iQty), 'wholesale form: business name, BRN, quantity, then the toy', formOrder)
+await setValue(cust, '[data-testid="b-brn"]', 'C12345/2020')
 await setValue(cust, '[data-testid="b-quantity"]', '120')
 await cust.click('[data-testid="bulk-submit"]')
 const wsOk = await cust.waitForSelector('[data-testid="bulk-success"]', { timeout: 15000 }).then(() => true).catch(() => false)
@@ -432,6 +437,7 @@ await owner.evaluate((n) => [...document.querySelectorAll('tr.row-link')].find((
 await owner.waitForSelector('[data-testid="save-request"]', { timeout: 15000 })
 await shot(owner, '16-owner-wholesale-detail')
 check(await owner.evaluate(() => document.body.innerText.includes('120')), 'the detail page shows the quantity')
+check(await owner.evaluate(() => document.body.innerText.includes('C12345/2020')), 'the detail page shows the BRN')
 
 // ================================================================ abandoned cart through the real checkout form
 section('Abandoned cart: typed at checkout, left behind, found by the owner, recovered by the customer')
