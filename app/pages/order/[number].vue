@@ -18,6 +18,7 @@ onMounted(async () => {
   if (!known) return
   state.value = known
   fresh.value = true
+  if (memory.isJustNow(number)) return   // placed (or found) a moment ago: the answer we hold is the server's own, there is nothing newer to ask for
   // the shop may have answered since: read the order again (silently)
   refreshing.value = true
   try { state.value = { ...known, order: (await api<{ data: Order }>(`/orders/${encodeURIComponent(number)}`, { query: { phone: known.phone } })).data } } catch { /* keep what we have */ } finally { refreshing.value = false }

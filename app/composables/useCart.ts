@@ -9,6 +9,10 @@ const TOKEN_KEY = 'jhk_cart_token'
 
 export interface AddResult { ok: boolean; message?: string }
 
+// the read of the cart that is on its way (shared by everybody who asks while it runs)
+let reading: Promise<void> | null = null
+let emptied = 0   // counts the orders placed in this visit (see afterOrder)
+
 export function useCart() {
   const cart = useState<Cart | null>('cart', () => null)
   const loading = useState('cart-loading', () => false)
@@ -27,7 +31,9 @@ export function useCart() {
   /** Calls a /cart endpoint with the token and keeps the answer (and a new token) as the cart. */
   async function call(method: string, path: string, body?: unknown, query?: Record<string, string>): Promise<Cart> {
     const token = readToken()
+    const started = emptied
     const res = await api<{ data: Cart }>(`/cart${path}`, { method, body, query, headers: token ? { 'X-Cart-Token': token } : {} })
+    if (started !== emptied && method === 'GET') return res.data   // an order emptied the cart while this read was on its way: the answer is out of date
     cart.value = res.data
     fetchedAt.value = Date.now()
     if (res.data?.token && res.data.token !== token) saveToken(res.data.token)
@@ -43,16 +49,25 @@ export function useCart() {
     if (!import.meta.client) return
     if (!readToken()) { cart.value = null; return }
     if (!force && !address && cart.value && !loadError.value && Date.now() - fetchedAt.value < 15_000) return
-    loading.value = true
-    try {
-      const q: Record<string, string> = {}
-      for (const k of ['city', 'area', 'postcode'] as const) if (address?.[k]) q[k] = address[k] as string
-      await call('GET', '', undefined, q)
-    } catch (e) {
-      loadError.value = apiFailure(e).message
-    } finally {
-      loading.value = false
+    // two places ask at the same moment (the page and the drawer, the checkout and the layout): one call answers both
+    if (!address && reading) return reading
+    const run = (async () => {
+      loading.value = true
+      try {
+        const q: Record<string, string> = {}
+        for (const k of ['city', 'area', 'postcode'] as const) if (address?.[k]) q[k] = address[k] as string
+        await call('GET', '', undefined, q)
+      } catch (e) {
+        loadError.value = apiFailure(e).message
+      } finally {
+        loading.value = false
+      }
+    })()
+    if (!address) {
+      reading = run
+      run.finally(() => { if (reading === run) reading = null })
     }
+    return run
   }
 
   async function add(variantId: number, qty = 1): Promise<AddResult> {
@@ -100,8 +115,11 @@ export function useCart() {
     try { await call('PUT', '/contact', contact) } catch { /* optional: the order itself is never affected */ }
   }
 
-  /** After an order the server has already emptied the cart: just read it again. */
-  async function afterOrder() { await refresh(undefined, true) }
+  /**
+   * After an order the server has already emptied the cart (PlaceOrder does it in the same transaction): show it empty at once and do not wait for a call.
+   * The token stays (the empty cart on the server is reused); the next time the drawer or the cart page opens, it reads the cart again.
+   */
+  function afterOrder() { emptied++; reading = null; cart.value = null; fetchedAt.value = 0; loadError.value = '' }
 
   return { cart, count, lines, warnings, loading, busy, loadError, drawerOpen, refresh, add, setQty, remove, applyCoupon, removeCoupon, saveContact, afterOrder, token: readToken }
 }

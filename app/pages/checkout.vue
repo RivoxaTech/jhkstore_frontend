@@ -170,7 +170,7 @@ async function place(confirmChange = false) {
     const res = await api<{ data: Order }>('/orders', { method: 'POST', body: withProof ? toFormData(body) : body, headers: { 'Idempotency-Key': idempotencyKey.value } })
     priceChanged.value = null
     memory.remember(res.data, form.phone.trim())
-    await cart.afterOrder()
+    cart.afterOrder()
     cart.drawerOpen.value = false
     await navigateTo(`/order/${res.data.order_number}`)
   } catch (e) {
