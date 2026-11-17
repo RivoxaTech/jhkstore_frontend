@@ -197,6 +197,9 @@ try {
 
     const { page, problems } = await open()
     await go(page, '/product/rainbow-stacking-blocks')
+    // a product page that comes out of the build and is opened DIRECTLY (a link, a search result, a reload) must ask the API for the live product (price, stock, name):
+    // it used to be answered from the baked data while Nuxt was still hydrating, so an edit showed only after the next rebuild
+    check(await waitFor(page, () => performance.getEntriesByType('resource').some((e) => /\/products\/rainbow-stacking-blocks(\?|$)/.test(e.name)), null, 5000), 'S3 product: a page opened directly reads the live product from the API (no rebuild needed to show an edit)')
     check(await exists(page, '[data-testid="gallery-main"]') && (await count(page, '[data-testid="gallery-thumb"]')) >= 2, 'S3 product: the gallery has a main picture and thumbnails', await count(page, '[data-testid="gallery-thumb"]'))
     const before = await page.$eval('[data-testid="gallery-main"]', (e) => e.src)
     await page.$$eval('[data-testid="gallery-thumb"]', (e) => e[1].click()); await sleep(300)

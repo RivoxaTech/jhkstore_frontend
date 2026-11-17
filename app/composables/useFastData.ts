@@ -17,8 +17,11 @@ export async function useFastData<T>(key: string, fetcher: () => Promise<T>, opt
     return value
   }, {
     getCachedData(k, nuxtApp, ctx) {
-      if (nuxtApp.isHydrating) return nuxtApp.payload.data[k]
+      // A refresh that somebody asked for is ALWAYS a real call. This must come before the hydration check: a page's onMounted runs while Nuxt still counts
+      // as hydrating, and answering that refresh from the baked data meant a page opened directly (a link, a search result, a reload) never got its live
+      // price and stock, only a page reached by clicking inside the site did.
       if (ctx.cause === 'refresh:manual' || ctx.cause === 'refresh:hook' || ctx.cause === 'watch') return undefined
+      if (nuxtApp.isHydrating) return nuxtApp.payload.data[k]
       const at = stamps.get(k)
       if (at && Date.now() - at < ttl) return nuxtApp.payload.data[k]
       return nuxtApp.static.data[k]   // the prerendered payload of a static page
