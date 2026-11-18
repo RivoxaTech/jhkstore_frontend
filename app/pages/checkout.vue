@@ -274,11 +274,7 @@ const showProofError = computed(() => proofError.value || (touched.value && erro
                     <p class="text-xs font-bold uppercase tracking-wider text-muted">Our bank details</p>
                     <ul class="mt-2 space-y-3">
                       <li v-for="(a, i) in bank.accounts" :key="i" class="rounded-xl bg-white p-3.5 text-sm shadow-sm ring-1 ring-line" data-testid="bank-account">
-                        <p class="font-semibold">{{ a.bank }}<span v-if="a.title" class="font-normal text-muted"> · {{ a.title }}</span></p>
-                        <dl class="mt-2 space-y-1.5">
-                          <div v-if="a.number" class="flex items-center justify-between gap-3"><dt class="text-muted">Account</dt><dd class="flex items-center gap-2 font-mono font-medium">{{ a.number }}<button type="button" class="grid h-7 w-7 place-items-center rounded-full text-muted hover:bg-primary-soft hover:text-primary-dark" :aria-label="`Copy the account number of ${a.bank}`" @click="copy(a.number, `n${i}`)"><Check v-if="copied === `n${i}`" :size="14" class="text-primary" /><Copy v-else :size="14" /></button></dd></div>
-                          <div v-if="a.iban" class="flex items-center justify-between gap-3"><dt class="text-muted">IBAN</dt><dd class="flex items-center gap-2 break-all font-mono font-medium">{{ a.iban }}<button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted hover:bg-primary-soft hover:text-primary-dark" :aria-label="`Copy the IBAN of ${a.bank}`" @click="copy(a.iban, `i${i}`)"><Check v-if="copied === `i${i}`" :size="14" class="text-primary" /><Copy v-else :size="14" /></button></dd></div>
-                        </dl>
+                        <BankAccountCard :account="a" />
                       </li>
                     </ul>
                   </div>

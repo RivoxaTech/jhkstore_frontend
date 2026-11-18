@@ -38,7 +38,7 @@ function params(page: number) {
 
 const key = computed(() => `listing:${props.fixedCategory ?? ''}:${props.fixedSub ?? ''}:${JSON.stringify(route.query)}`)
 const { data, error, status, refresh } = await useAsyncData(key.value, () => api<Paginated<ProductCard>>('/products', { query: params(1) }), { watch: [() => route.query] })
-const { data: categories } = await useFastData('categories', () => api<{ data: Category[] }>('/categories'))
+const { data: categories, refreshIfStale: refreshCategories } = await useFastData('categories', () => api<{ data: Category[] }>('/categories'))
 
 const extra = ref<ProductCard[]>([])
 const nextPage = ref(2)
@@ -60,7 +60,7 @@ async function loadMore() {
 }
 
 // prices and stock are live: a page that was built earlier asks again once it is shown
-onMounted(() => { if (status.value === 'success') refresh() })
+onMounted(() => { if (status.value === 'success') refresh(); refreshCategories() })   // the categories are read again too: one added since the build shows at once
 
 // ---- categories and sort
 const cats = computed(() => categories.value?.data ?? [])

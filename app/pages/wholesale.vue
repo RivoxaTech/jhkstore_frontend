@@ -14,8 +14,10 @@ useSeo(() => ({
   jsonLd: breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Wholesale', path: '/wholesale' }]),
 }))
 
-// the product list of the enquiry form is baked in at build time
-const { data: products } = await useFastData('wholesale-products', () => api<Paginated<ProductCard>>('/products', { query: { per_page: 100, sort: 'newest' } }).then((r) => r.data))
+// the product list of the enquiry form is baked in at build time and read again as soon as the page is shown (a toy added since the build is in the list at once)
+const { data: products, refreshIfStale } = await useFastData('wholesale-products', () => api<Paginated<ProductCard>>('/products', { query: { per_page: 100, sort: 'newest' } }).then((r) => r.data))
+
+onMounted(() => { refreshIfStale() })
 
 const form = reactive({ name: '', phone: '', email: '', business_name: '', brn: '', product: '' as string, product_name: '', quantity: '' as string | number, message: '', hp_extra: '' })
 const busy = ref(false)

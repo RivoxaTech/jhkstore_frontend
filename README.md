@@ -23,7 +23,12 @@ npm run test:e2e         # the browser tests over the generated site (the API wi
 
 Environment (`.env`, and the Cloudflare Pages settings): `NUXT_PUBLIC_API_BASE` (for example `https://api.example.com/api/v1/store`) and `NUXT_PUBLIC_SITE_URL` (the public address of this website, no trailing slash). Node 22.22.3+ or 24.15+ (`NODE_VERSION=24` on Cloudflare Pages).
 
-## Deploy on Cloudflare Pages
+## Deploy on Cloudflare
+
+**As a Worker with static assets** (the usual set-up, `<name>.workers.dev`): `wrangler.jsonc` and `worker/index.js` are in this repository. Build command `npm run generate`, deploy command `npx wrangler deploy`, root directory empty, the build variables below. The Worker serves the files and gives the app shell (with its own address) to a product, category or order page that the build did not make; the `_redirects` file of Pages and Netlify does not work in a Worker, so it is kept as `public/_redirects.example`.
+
+**As a Pages project** (or Netlify): copy `public/_redirects.example` to `public/_redirects` and continue as follows.
+
 
 Connect this repository. **Root directory: empty** (the project is at the root of the repository). Framework preset: Nuxt.js (or None). Build command `npm run generate`, output directory `.output/public`. Environment variables `NUXT_PUBLIC_API_BASE`, `NUXT_PUBLIC_SITE_URL`, `NODE_VERSION=24`. The deploy hook for the admin panel's *Rebuild website now* button: Pages project → Settings → Builds & deployments → Deploy hooks. Build from the repository's production branch only, and do not rebuild after every admin edit (the free plan has about 500 builds a month): see `backend/docs/GO_LIVE.md`, "How often must the storefront be rebuilt?". The whole guide: `backend/docs/STOREFRONT.md`.
 
@@ -31,6 +36,6 @@ Connect this repository. **Root directory: empty** (the project is at the root o
 
 * `app/config/site.ts`, `app/content/*.ts`: the menu, the trust bar and the static pages (About, Shipping, Returns, Terms, Privacy): **edit per client**.
 * `app/composables/` (`useApi`, `useCart`, `useSettings`, `useFastData`, ...), `app/components/`, `app/pages/`.
-* `public/_redirects`, `public/_headers` (Cloudflare Pages / Netlify), `public/.htaccess.example` (cPanel).
+* `wrangler.jsonc` + `worker/index.js` (Cloudflare Worker), `public/_headers`, `public/_redirects.example` (Pages / Netlify), `public/.htaccess.example` (cPanel).
 * `scripts/serve-static.mjs` serves the built site like the hosts do. `tests/`: `e2e.mjs` (the site), `perf.mjs` and `perf-actions.mjs` (speed; the second one with `delay-proxy.mjs`, which makes the API "far away"), `journey.mjs` (a customer and the shop owner in one browser session: needs the backend and admin repositories cloned next to this one, in folders named `backend` and `admin-frontend`, and the log mailer).
 * No analytics, advertising or tracking script of any kind: do not add one without updating the privacy policy.

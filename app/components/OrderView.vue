@@ -59,7 +59,7 @@ const t = computed(() => o.value.totals ?? {})
         <div v-if="o.payment.accounts?.length" class="mt-3 space-y-3" data-testid="bank-accounts">
           <p class="text-sm text-ink/85">Please transfer <strong>{{ money(o.grand_total) }}</strong> to one of these accounts and use <strong>{{ o.order_number }}</strong> as the reference.</p>
           <ul class="grid gap-3 sm:grid-cols-2">
-            <li v-for="(a, i) in o.payment.accounts" :key="i" class="card-flat p-4 text-sm"><p class="font-semibold">{{ a.bank }}</p><p v-if="a.title" class="text-muted">{{ a.title }}</p><p v-if="a.number">Account: <strong>{{ a.number }}</strong></p><p v-if="a.iban">IBAN: <strong>{{ a.iban }}</strong></p></li>
+            <li v-for="(a, i) in o.payment.accounts" :key="i" class="card-flat p-4" data-testid="bank-account"><BankAccountCard :account="a" /></li>
           </ul>
           <p v-if="o.payment.instructions" class="rounded-xl bg-primary-soft px-4 py-3 text-sm text-primary-dark">{{ o.payment.instructions }}</p>
         </div>

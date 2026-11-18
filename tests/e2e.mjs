@@ -354,6 +354,9 @@ try {
     await go(page, '/checkout')
     await fillCheckout(page, 'bank')
     check(await exists(page, '[data-testid="bank-panel"]') && /Example Bank/.test(await text(page, '[data-testid="bank-panel"]')) && await exists(page, '[data-testid="bank-amount"]') && await exists(page, '[data-testid="proof-file"]'), 'S7a checkout: choosing bank transfer shows the bank details, the amount to transfer and the screenshot upload')
+    // the bank account is read line by line (Bank / Title / Account No), the copy icon right behind the value
+    const bankRows = await page.$$eval('[data-testid="bank-account-rows"] dt', (e) => e.map((x) => x.innerText))
+    check(bankRows.includes('Bank') && bankRows.includes('Account No') && (await count(page, '[data-testid="bank-account-rows"] [data-testid="copy-number"]')) >= 1, 'S7a checkout: every bank account shows labelled lines (Bank, Title, Account No) with a copy icon next to the account number', bankRows)
     await click(page, '[data-testid="pay-cod"]')
     check(!(await exists(page, '[data-testid="bank-panel"]')), 'S7a checkout: cash on delivery hides the bank panel')
     await click(page, '[data-testid="pay-bank"]')

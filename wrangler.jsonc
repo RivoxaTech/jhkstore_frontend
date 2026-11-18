@@ -1,0 +1,12 @@
+{
+  // The storefront on Cloudflare: a Worker that serves the static site built by `npm run generate` (build command) and deployed by `npx wrangler deploy` (deploy command).
+  // The name must stay the name of the Worker that already exists, or a second Worker is made.
+  "name": "jhkstore-frontend",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./.output/public",
+    "binding": "ASSETS",
+    "not_found_handling": "none"
+  }
+}

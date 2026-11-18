@@ -1,5 +1,5 @@
 // A tiny static file server that behaves like the real hosts for this site: files first (also /page -> /page/index.html), then the app shell (200.html) for the paths
-// listed in public/_redirects (/product/*, /category/*, /order/*), otherwise 404.html with status 404. Used to look at and test the generated site locally.
+// the product, category and order addresses (what public/_redirects.example and worker/index.js do on the hosts), otherwise 404.html with status 404. Used to look at and test the generated site locally.
 //
 //   node scripts/serve-static.mjs .output/public [port]        (npm run preview)
 import { createServer } from 'node:http'
