@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
 
 /**
@@ -24,6 +25,15 @@ const sitemap = await getJson<{ products: any[]; categories: any[]; sub_categori
 // a static build of an EMPTY site (API down) must never be published: stop the build instead
 if (process.env.npm_lifecycle_event === 'generate' && (!settings || !sitemap)) {
   throw new Error(`The API is not reachable at ${apiBase}: nuxt generate needs it (settings and sitemap are baked into the pages). Start the backend, or fix NUXT_PUBLIC_API_BASE.`)
+}
+
+// every build says when it started (/build.json, not committed): the admin panel reads it to tell the owner that a rebuild is online
+if (['generate', 'build'].includes(process.env.npm_lifecycle_event ?? '')) {
+  try {
+    writeFileSync(new URL('./public/build.json', import.meta.url), JSON.stringify({ built_at: new Date().toISOString() }) + '\n')
+  } catch {
+    // a read-only checkout: the site is fine without it, the panel then cannot say when it went online
+  }
 }
 
 const FONT_WEIGHTS = [400, 500, 600, 700]
