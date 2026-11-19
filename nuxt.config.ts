@@ -9,13 +9,23 @@ import tailwindcss from '@tailwindcss/vite'
 const apiBase = (process.env.NUXT_PUBLIC_API_BASE || 'http://127.0.0.1:8002/api/v1/store').replace(/\/$/, '')
 const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
 
+const buildRun = ['generate', 'build'].includes(process.env.npm_lifecycle_event ?? '')
+const reasons: string[] = []   // why the API did not answer, for the error of a failed build
+
+/** A build asks again (4 tries, 5, 10 and 15 seconds apart): the backend may be in the middle of its own deploy, which a single try would take for "down". */
 async function getJson<T>(path: string): Promise<T | null> {
-  try {
-    const res = await fetch(`${apiBase}${path}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(20000) })
-    return res.ok ? ((await res.json()) as T) : null
-  } catch {
-    return null   // the API is not running (for example `nuxt dev` without it): the site still starts, with defaults
+  const tries = buildRun ? 4 : 1
+  for (let i = 1; i <= tries; i++) {
+    try {
+      const res = await fetch(`${apiBase}${path}`, { headers: { Accept: 'application/json', 'User-Agent': 'jhkstore-build' }, signal: AbortSignal.timeout(20000) })
+      if (res.ok) return (await res.json()) as T
+      reasons.push(`${path}: HTTP ${res.status}`)
+    } catch (e) {
+      reasons.push(`${path}: ${(e as any)?.cause?.code || (e as Error).message}`)   // the API is not running (for example `nuxt dev` without it): the site still starts, with defaults
+    }
+    if (i < tries) await new Promise((resolve) => setTimeout(resolve, 5000 * i))
   }
+  return null
 }
 
 // ---- build time: what the API knows now (fonts of the theme, the pages to prerender)
@@ -24,7 +34,7 @@ const sitemap = await getJson<{ products: any[]; categories: any[]; sub_categori
 
 // a static build of an EMPTY site (API down) must never be published: stop the build instead
 if (process.env.npm_lifecycle_event === 'generate' && (!settings || !sitemap)) {
-  throw new Error(`The API is not reachable at ${apiBase}: nuxt generate needs it (settings and sitemap are baked into the pages). Start the backend, or fix NUXT_PUBLIC_API_BASE.`)
+  throw new Error(`The API is not reachable at ${apiBase} (${reasons.slice(-2).join('; ') || 'no answer'}): nuxt generate needs it (settings and sitemap are baked into the pages). Start the backend, or fix NUXT_PUBLIC_API_BASE.`)
 }
 
 // every build says when it started (/build.json, not committed): the admin panel reads it to tell the owner that a rebuild is online
