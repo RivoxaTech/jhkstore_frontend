@@ -10,6 +10,10 @@ export interface SeoInput {
   type?: 'website' | 'product' | 'article'
   noindex?: boolean
   jsonLd?: Record<string, any> | Record<string, any>[]
+  /** What the picture shows (read out by screen readers, shown when the picture does not load). Default: the page title. */
+  imageAlt?: string
+  /** Extra <meta> tags, e.g. the product price for Facebook and Pinterest. */
+  meta?: Array<{ property?: string; name?: string; content: string }>
 }
 
 /**
@@ -39,20 +43,27 @@ export function useSeo(input: SeoInput | (() => SeoInput)) {
     const i = get()
     return {
       title: title.value,
-      link: [{ rel: 'canonical', href: i.path === '/' ? `${siteUrl}/` : canonical.value }],
+      link: [
+        { rel: 'canonical', href: i.path === '/' ? `${siteUrl}/` : canonical.value },
+        // one language: the page is its own English version and the default one
+        { rel: 'alternate', hreflang: 'en', href: i.path === '/' ? `${siteUrl}/` : canonical.value },
+        { rel: 'alternate', hreflang: 'x-default', href: i.path === '/' ? `${siteUrl}/` : canonical.value },
+      ],
       meta: [
         { name: 'description', content: description.value },
-        { name: 'robots', content: i.noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large' },
+        { name: 'robots', content: i.noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' },
         { property: 'og:site_name', content: storeName.value },
         { property: 'og:type', content: i.type ?? 'website' },
+        { property: 'og:locale', content: 'en_US' },
         { property: 'og:title', content: title.value },
         { property: 'og:description', content: description.value },
         { property: 'og:url', content: i.path === '/' ? `${siteUrl}/` : canonical.value },
-        ...(image.value ? [{ property: 'og:image', content: image.value }] : []),
+        ...(image.value ? [{ property: 'og:image', content: image.value }, { property: 'og:image:alt', content: i.imageAlt || title.value }] : []),
         { name: 'twitter:card', content: image.value ? 'summary_large_image' : 'summary' },
         { name: 'twitter:title', content: title.value },
         { name: 'twitter:description', content: description.value },
-        ...(image.value ? [{ name: 'twitter:image', content: image.value }] : []),
+        ...(image.value ? [{ name: 'twitter:image', content: image.value }, { name: 'twitter:image:alt', content: i.imageAlt || title.value }] : []),
+        ...(i.meta ?? []),
       ],
       script: i.jsonLd
         ? (Array.isArray(i.jsonLd) ? i.jsonLd : [i.jsonLd]).map((ld, n) => ({ key: `ld-${n}`, type: 'application/ld+json', innerHTML: JSON.stringify(expand(ld)) }))

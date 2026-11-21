@@ -546,6 +546,27 @@ try {
     const shop = await html('/shop/')
     check(/<img[^>]+width="\d+"[^>]+height="\d+"/.test(shop) || /<img[^>]+height="\d+"[^>]+width="\d+"/.test(shop), 'S14 performance: pictures carry width and height (no layout shift)')
     check(!/(google-analytics|googletagmanager|gtag\(|fbq\(|hotjar|plausible)/i.test(home + shop), 'S14 no analytics or tracking code')
+
+    // ---- S14b the schema.org data and the head tags (the data is built in app/utils/schema.ts; tests/seo-schema.mjs checks the builders)
+    const ldOf = (page) => [...page.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]))
+    const prod = await html('/product/rainbow-stacking-blocks/')
+    const prodLd = ldOf(prod).find((o) => o['@type'] === 'Product')
+    check(prodLd && prodLd.url.endsWith('/product/rainbow-stacking-blocks') && prodLd.sku && prodLd.offers?.seller?.name && prodLd.offers.availability && prodLd.image?.length > 0, 'S14b SEO: the product has Product JSON-LD with url, sku, pictures, and an offer with price, availability and seller', prodLd && Object.keys(prodLd).join(','))
+    check(/<meta property="product:price:amount" content="[\d.]+"/.test(prod) && /<meta property="product:availability"/.test(prod) && /<meta property="og:image:alt" content="Rainbow Stacking Blocks"/.test(prod), 'S14b SEO: the product page carries the price, availability and the picture description for Facebook / Pinterest / WhatsApp')
+    const shopLd = ldOf(shop).find((o) => o['@type'] === 'CollectionPage')
+    check(shopLd && shopLd.mainEntity?.itemListElement?.length > 0 && shopLd.mainEntity.itemListElement.every((it, n) => it.position === n + 1 && /\/product\//.test(it.url)), 'S14b SEO: the shop page lists its toys as an ItemList (CollectionPage)')
+    const cat = await html(`/category/${(await api('GET', 'store/sitemap')).json.categories[0].slug}/`)
+    check(ldOf(cat).some((o) => o['@type'] === 'CollectionPage') && ldOf(cat).some((o) => o['@type'] === 'BreadcrumbList'), 'S14b SEO: a category page has the ItemList and the breadcrumb')
+    const about = await html('/about/')
+    check(ldOf(about).some((o) => o['@type'] === 'AboutPage') && ldOf(await html('/privacy-policy/')).some((o) => o['@type'] === 'WebPage'), 'S14b SEO: the information pages have WebPage / AboutPage data')
+    const org = ldOf(home).find((o) => o['@type'] === 'Organization')
+    check(org && org['@id'].endsWith('/#organization') && (org.contactPoint?.[0] || org.email),'S14b SEO: the Organization has an id and its contact point (only what the shop has)')
+    check(/<link rel="alternate" hreflang="en" href="[^"]+"/.test(home) && /hreflang="x-default"/.test(home) && /<meta property="og:locale" content="en_US"/.test(home), 'S14b SEO: hreflang (en and x-default) and og:locale')
+    check(/max-snippet:-1/.test(home) && /max-video-preview:-1/.test(home), 'S14b SEO: pages allow full snippets and video previews')
+    check(/<link rel="preconnect" href="https?:\/\/[^"]+"/.test(home), 'S14b performance: the connection to the API (pictures and data) is opened early')
+    check(/Disallow: \/200\$/.test(robots) && /Disallow: \/404\$/.test(robots), 'S14b SEO: robots.txt keeps the app shell (/200) and the error page (/404) out')
+    check(/<loc>[^<]*\/<\/loc>\s*<lastmod>[^<]+<\/lastmod>/.test(sitemap), 'S14b SEO: the home page of the sitemap has the date of the newest change')
+    check(/"version"|built_at/.test(await html('/build.json')) && /\/build\.json[\s\S]{0,40}X-Robots-Tag: noindex/.test(fs.readFileSync(path.join(ROOT, 'public', '_headers'), 'utf8')), 'S14b SEO: /build.json exists and is noindex in the headers file')
   }
 
   // ================================================================ S15 accessibility basics

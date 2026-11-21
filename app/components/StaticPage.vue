@@ -10,6 +10,7 @@ import type { Block, PageContent } from '~/content/types'
  */
 const props = defineProps<{ content: PageContent; path: string }>()
 const { settings, storeName } = useSettings()
+const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
 
 function fill(text: string): string {
   const s = settings.value
@@ -42,7 +43,10 @@ useSeo(() => ({
   title: props.content.title,
   description: fill(props.content.description),
   path: props.path,
-  jsonLd: breadcrumbLd([{ name: 'Home', path: '/' }, { name: props.content.title, path: props.path }]),
+  jsonLd: [
+    webPageLd(siteUrl, props.content.title, props.path, fill(props.content.description), props.path === '/about' ? 'AboutPage' : 'WebPage'),
+    breadcrumbLd([{ name: 'Home', path: '/' }, { name: props.content.title, path: props.path }]),
+  ],
 }))
 </script>
 

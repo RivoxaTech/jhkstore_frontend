@@ -8,6 +8,7 @@ import tailwindcss from '@tailwindcss/vite'
  */
 const apiBase = (process.env.NUXT_PUBLIC_API_BASE || 'http://127.0.0.1:8002/api/v1/store').replace(/\/$/, '')
 const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+const apiOrigin = new URL(apiBase).origin
 
 const buildRun = ['generate', 'build'].includes(process.env.npm_lifecycle_event ?? '')
 const reasons: string[] = []   // why the API did not answer, for the error of a failed build
@@ -55,6 +56,7 @@ const dynamicRoutes = [
   ...(sitemap?.categories ?? []).map((c) => `/category/${c.slug}`),
   ...(sitemap?.sub_categories ?? []).map((s) => `/category/${s.category_slug}/${s.slug}`),
 ]
+const newestChange = [...(sitemap?.products ?? []), ...(sitemap?.categories ?? [])].map((x: any) => x.updated_at).filter(Boolean).sort().pop()
 const staticRoutes = ['/', '/shop', '/about', '/wholesale', '/contact', '/shipping-policy', '/return-policy', '/terms-and-conditions', '/privacy-policy']
 
 export default defineNuxtConfig({
@@ -78,6 +80,8 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'theme-color', content: settings?.theme?.primary ?? '#2563EB' },
       ],
+      // the pictures and every data call come from the API's address: open that connection while the page is still loading (a faster first picture)
+      link: [{ rel: 'preconnect', href: apiOrigin }, { rel: 'dns-prefetch', href: apiOrigin }],
     },
   },
 
@@ -107,7 +111,8 @@ export default defineNuxtConfig({
   sitemap: {
     // products, categories and sub-categories come from GET /sitemap (baked in at build time); the static pages are listed by hand
     urls: [
-      ...staticRoutes.map((loc) => ({ loc })),
+      // the date of the newest change to a toy is the honest "last changed" date of the pages that list the toys; the text pages have none (they change with a deploy)
+      ...staticRoutes.map((loc) => ({ loc, ...(['/', '/shop'].includes(loc) && newestChange ? { lastmod: newestChange } : {}) })),
       ...(sitemap?.products ?? []).map((p) => ({ loc: `/product/${p.slug}`, lastmod: p.updated_at, images: p.image_url ? [{ loc: p.image_url }] : [] })),
       ...(sitemap?.categories ?? []).map((c) => ({ loc: `/category/${c.slug}`, lastmod: c.updated_at })),
       ...(sitemap?.sub_categories ?? []).map((s) => ({ loc: `/category/${s.category_slug}/${s.slug}`, lastmod: s.updated_at })),
@@ -117,7 +122,8 @@ export default defineNuxtConfig({
     discoverImages: false,
   },
   robots: {
-    disallow: ['/cart', '/checkout', '/track', '/order/'],
+    // /200 and /404 are the app shell and the error page the Cloudflare Worker serves under other addresses: never as pages of their own
+    disallow: ['/cart', '/checkout', '/track', '/order/', '/200$', '/404$'],
     sitemap: [`${siteUrl}/sitemap.xml`],
   },
 

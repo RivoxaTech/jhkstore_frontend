@@ -45,7 +45,7 @@ export interface Variant {
   id: number; name: string; sku: string; is_default: boolean; mrp: number; price: number; compare_price: number | null; discount_label: string | null
   in_stock: boolean; qty: number; low_stock: boolean; price_tiers: PriceTier[]; image_url: string | null; thumb_url: string | null; images: Picture[]
 }
-export interface VideoItem { url: string; poster_url: string | null; mime: string | null; source: 'upload' | 'embed' }
+export interface VideoItem { url: string; poster_url: string | null; mime: string | null; source: 'upload' | 'embed'; uploaded_at?: string | null }
 export interface ContentTab { key: string; title: string; format: 'paragraphs' | 'bullets' | 'table'; content: string | null; manual_url: string | null }
 export interface Product extends ProductCard {
   product_name: string; sku: string; sub_category: { name: string; slug: string } | null; description: string | null

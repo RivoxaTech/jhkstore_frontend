@@ -11,7 +11,7 @@ import type { Product } from '~/types'
 const route = useRoute()
 const slug = String(route.params.slug)
 const { money } = useMoney()
-const { settings, isClosed } = useSettings()
+const { settings, isClosed, storeName } = useSettings()
 const cart = useCart()
 const toast = useToast()
 const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
@@ -80,26 +80,25 @@ async function add(buyNow = false) {
 }
 
 // ---- SEO
-const availability = computed(() => (product.value?.availability === 'in_stock' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'))
 useSeo(() => {
   const p = product.value
-  const code = settings.value?.currency.code ?? ''
-  const currency = /^[A-Za-z]{3}$/.test(code) ? code.toUpperCase() : undefined   // the store may use a short code like "Rs": search engines only know ISO codes, so none is said then
+  const currency = currencyCode(settings.value)   // the store may use a short code like "Rs": search engines only know ISO codes, so none is said then
   const prices = (p?.variants ?? []).map((v) => v.price)
-  const offer = !p ? undefined : prices.length > 1
-    ? { '@type': 'AggregateOffer', priceCurrency: currency, lowPrice: Math.min(...prices), highPrice: Math.max(...prices), offerCount: prices.length, availability: availability.value, url: `${siteUrl}/product/${slug}` }
-    : { '@type': 'Offer', priceCurrency: currency, price: prices[0], availability: availability.value, url: `${siteUrl}/product/${slug}`, itemCondition: 'https://schema.org/NewCondition' }
   const crumbs = [{ name: 'Home', path: '/' }, ...(p?.breadcrumbs ?? []).map((b) => ({ name: b.name, path: b.type === 'category' ? `/category/${b.slug}` : b.type === 'sub_category' ? `/category/${b.category_slug}/${b.slug}` : `/product/${b.slug}` }))]
   return {
     title: p?.seo.title || p?.name || 'Toy',
     description: p?.seo.description,
     path: `/product/${slug}`,
     image: p?.seo.image_url,
+    imageAlt: p?.name,
     type: 'product',
-    jsonLd: p ? [
-      { '@context': 'https://schema.org', '@type': 'Product', name: p.name, image: (p.images.length ? p.images.map((i) => i.url) : [p.image_url]).filter(Boolean), description: p.seo.description || p.short_description || undefined, sku: p.sku, category: p.category.name, offers: offer },
-      breadcrumbLd(crumbs),
+    // the price and stock for Facebook, Pinterest and WhatsApp previews
+    meta: p && currency && prices.length ? [
+      { property: 'product:price:amount', content: String(Math.min(...prices)) },
+      { property: 'product:price:currency', content: currency },
+      { property: 'product:availability', content: p.availability === 'in_stock' ? 'in stock' : 'out of stock' },
     ] : [],
+    jsonLd: p ? [productLd(p, settings.value, siteUrl, storeName.value, slug), breadcrumbLd(crumbs)] : [],
   }
 })
 

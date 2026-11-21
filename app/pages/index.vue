@@ -44,8 +44,8 @@ useSeo(() => ({
   path: '/',
   title: '',
   jsonLd: [
-    { '@context': 'https://schema.org', '@type': 'Organization', name: storeName.value, url: siteUrl, logo: settings.value?.store.logo_url || undefined, email: settings.value?.store.email || undefined, telephone: settings.value?.store.phone || undefined },
-    { '@context': 'https://schema.org', '@type': 'WebSite', name: storeName.value, url: siteUrl, potentialAction: { '@type': 'SearchAction', target: `${siteUrl}/shop?q={search_term_string}`, 'query-input': 'required name=search_term_string' } },
+    organizationLd(settings.value, siteUrl, storeName.value),
+    websiteLd(siteUrl, storeName.value),
   ],
 }))
 </script>

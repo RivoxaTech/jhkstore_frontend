@@ -47,6 +47,17 @@ const moreError = ref('')
 watch(() => data.value, () => { extra.value = []; nextPage.value = 2; moreError.value = '' })
 const products = computed(() => [...(data.value?.data ?? []), ...extra.value])
 const total = computed(() => data.value?.meta.total ?? 0)
+
+// the list as schema.org data (an ItemList of the first toys): only for the plain, indexable page, not for a filtered or searched view
+const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
+const listName = computed(() => {
+  const c = categories.value?.data.find((x) => x.slug === props.fixedCategory)
+  const sc = c?.sub_categories.find((x) => x.slug === props.fixedSub)
+  return sc?.name || c?.name || 'Shop all toys'
+})
+useHead(() => (Object.keys(route.query).length || !products.value.length ? {} : {
+  script: [{ key: 'ld-collection', type: 'application/ld+json', innerHTML: JSON.stringify(collectionLd(siteUrl, listName.value, route.path, products.value)) }],
+}))
 const hasMore = computed(() => (data.value ? nextPage.value <= data.value.meta.last_page : false))
 
 async function loadMore() {

@@ -28,3 +28,8 @@
   X-Robots-Tag: noindex
 /order/*
   X-Robots-Tag: noindex
+
+# The version file that the admin panel reads: not a page
+/build.json
+  X-Robots-Tag: noindex
+  Cache-Control: no-store
