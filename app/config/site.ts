@@ -31,10 +31,10 @@ export const site = {
   /** The "Our Collection" section of the home page. `{count}` = the number of products shown. */
   collection: {
     label: 'Our Collection',
-    title: 'Top {count} Toys for *Your Child*',
-    /** Used instead while the shop has fewer than 3 products ("Top 1 Toys" would read badly). */
-    titleFew: 'Toys for *Your Child*',
-    subtitle: 'Discover our handpicked selection of educational and fun toys.',
+    title: 'Smart Picks for *Fun & Everyday Life*',
+    /** Used instead while the shop has fewer than 3 products (a title with a count, if one is wanted again, would read badly then). */
+    titleFew: 'Smart Picks for *Fun & Everyday Life*',
+    subtitle: 'Discover our handpicked selection of fun, useful and everyday essentials for the whole family.',
     /** More than this many products: show the first ones and a "View all products" button. */
     homeLimit: 12,
   },
