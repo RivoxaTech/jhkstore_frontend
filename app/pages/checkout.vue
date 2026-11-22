@@ -17,7 +17,7 @@ const memory = useOrderMemory()
 const { settings, isClosed } = useSettings()
 const { money } = useMoney()
 
-const form = reactive({ name: '', phone: '', email: '', line1: '', city: '', area: '', postcode: '', landmark: '', country: '', note: '', payment: 'cod' as 'cod' | 'bank_transfer', hp_extra: '' })
+const form = reactive({ name: '', phone: '', email: '', line1: '', city: '', landmark: '', note: '', payment: 'cod' as 'cod' | 'bank_transfer', hp_extra: '' })
 const touched = ref(false)
 const idempotencyKey = ref('')
 const quote = ref<Quote | null>(null)
@@ -38,6 +38,16 @@ const cardVisible = computed(() => payment.value?.card.visible ?? false)
 const summary = computed(() => quote.value?.summary ?? cart.cart.value?.summary)
 const lines = computed(() => quote.value?.items ?? cart.lines.value)
 
+// + / - on a line of "Your order": the number changes at once, the server prices the cart again and the totals follow (delivery included, it knows the city)
+const pendingQty = reactive<Record<number, number>>({})
+async function changeQty(variantId: number, value: number) {
+  pendingQty[variantId] = value
+  const r = await cart.setQty(variantId, value)
+  if (!r.ok) toast.error(r.message || 'Could not change the quantity')
+  await requote()
+  delete pendingQty[variantId]
+}
+
 function pickPayment() {
   if (form.payment === 'cod' && !codOn.value && bankOn.value) form.payment = 'bank_transfer'
   if (form.payment === 'bank_transfer' && !bankOn.value && codOn.value) form.payment = 'cod'
@@ -45,7 +55,6 @@ function pickPayment() {
 
 onMounted(async () => {
   idempotencyKey.value = crypto.randomUUID()
-  form.country = settings.value?.store.country || ''
   pickPayment()
   await Promise.all([cart.refresh(), requote()])   // both only need the cart token: ask at the same time
 })
@@ -58,12 +67,12 @@ async function requote() {
   quoting.value = true
   quoteError.value = ''
   try {
-    const body: Record<string, any> = { cart_token: cart.token(), address: { city: form.city.trim(), area: form.area.trim(), postcode: form.postcode.trim() }, hp_extra: '' }
+    const body: Record<string, any> = { cart_token: cart.token(), address: { city: form.city.trim() }, hp_extra: '' }
     if (form.phone.trim()) body.phone = form.phone.trim()
     quote.value = (await api<{ data: Quote }>('/checkout/quote', { method: 'POST', body })).data
   } catch (e) { quoteError.value = apiFailure(e).message } finally { quoting.value = false }
 }
-watch(() => [form.city, form.area, form.postcode, form.phone], () => { clearTimeout(timer); timer = setTimeout(requote, 600) })
+watch(() => [form.city, form.phone], () => { clearTimeout(timer); timer = setTimeout(requote, 600) })
 onBeforeUnmount(() => clearTimeout(timer))
 
 // ---- the cart remembers who is buying (phone and / or e-mail), so a cart that is left behind can be followed up by the shop (Customers > Abandoned carts)
@@ -157,7 +166,7 @@ async function place(confirmChange = false) {
   const expected = confirmChange && priceChanged.value ? priceChanged.value.current : quote.value?.summary.grand_total
   const body: Record<string, any> = {
     customer: { name: form.name.trim(), phone: form.phone.trim(), ...(form.email.trim() ? { email: form.email.trim() } : {}) },
-    address: { line1: form.line1.trim(), city: form.city.trim(), area: form.area.trim() || undefined, postcode: form.postcode.trim() || undefined, landmark: form.landmark.trim() || undefined, country: form.country.trim() || undefined },
+    address: { line1: form.line1.trim(), city: form.city.trim(), landmark: form.landmark.trim() || undefined },
     cart_token: cart.token(),
     payment_method: form.payment,
     customer_note: form.note.trim() || undefined,
@@ -248,10 +257,7 @@ const showProofError = computed(() => proofError.value || (touched.value && erro
             <h2 id="address-h" class="mb-4 text-lg font-semibold">Delivery address</h2>
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="sm:col-span-2"><label class="field-label" for="line1">Street address *</label><input id="line1" v-model="form.line1" class="field-input" autocomplete="address-line1" :aria-invalid="!!showField('line1')" data-testid="f-line1"><p v-if="showField('line1')" class="field-error">{{ errors.line1 }}</p></div>
-              <div><label class="field-label" for="city">City *</label><input id="city" v-model="form.city" class="field-input" autocomplete="address-level2" :aria-invalid="!!showField('city')" data-testid="f-city"><p v-if="showField('city')" class="field-error">{{ errors.city }}</p></div>
-              <div><label class="field-label" for="area">Area <span class="font-normal text-muted">(optional)</span></label><input id="area" v-model="form.area" class="field-input" autocomplete="address-level3" data-testid="f-area"></div>
-              <div><label class="field-label" for="postcode">Postcode <span class="font-normal text-muted">(optional)</span></label><input id="postcode" v-model="form.postcode" class="field-input" autocomplete="postal-code" data-testid="f-postcode"></div>
-              <div><label class="field-label" for="country">Country</label><input id="country" v-model="form.country" class="field-input" autocomplete="country-name" data-testid="f-country"></div>
+              <div class="sm:col-span-2"><label class="field-label" for="city">City *</label><input id="city" v-model="form.city" class="field-input" autocomplete="address-level2" :aria-invalid="!!showField('city')" data-testid="f-city"><p v-if="showField('city')" class="field-error">{{ errors.city }}</p></div>
               <div class="sm:col-span-2"><label class="field-label" for="landmark">Landmark <span class="font-normal text-muted">(optional)</span></label><input id="landmark" v-model="form.landmark" class="field-input" placeholder="Near the park, next to the school..." data-testid="f-landmark"></div>
               <div class="sm:col-span-2"><label class="field-label" for="note">Note for the shop <span class="font-normal text-muted">(optional)</span></label><textarea id="note" v-model="form.note" rows="2" maxlength="500" class="field-textarea" placeholder="For example: please call before delivery" data-testid="f-note" /></div>
             </div>
@@ -316,11 +322,11 @@ const showProofError = computed(() => proofError.value || (touched.value && erro
 
         <aside class="card space-y-5 p-5 lg:sticky lg:top-24" aria-label="Order summary">
           <h2 class="text-lg font-semibold">Your order</h2>
-          <ul class="max-h-64 divide-y divide-line overflow-y-auto pr-1">
+          <ul class="max-h-80 divide-y divide-line overflow-y-auto pr-1">
             <li v-for="l in lines" :key="l.variant_id" class="flex items-center gap-3 py-2.5">
               <span class="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-primary-soft"><img v-if="l.thumb_url || l.image_url" :src="l.thumb_url || l.image_url || ''" :alt="l.name" width="48" height="48" class="h-full w-full object-cover" loading="lazy"><span class="absolute -right-0 -top-0 grid h-5 min-w-5 place-items-center rounded-bl-lg bg-ink/80 px-1 text-[10px] font-bold text-white">{{ l.qty }}</span></span>
-              <span class="min-w-0 flex-1 text-sm"><span class="block truncate font-medium">{{ l.name }}</span><span v-if="l.warnings.length" class="block text-xs text-[#b4233c]">{{ l.warnings[0].message }}</span></span>
-              <span class="text-sm font-semibold">{{ money(l.line_total) }}</span>
+              <span class="min-w-0 flex-1 text-sm"><span class="block truncate font-medium">{{ l.name }}</span><span v-if="l.warnings.length" class="block text-xs text-[#b4233c]">{{ l.warnings[0].message }}</span><QuantityStepper class="mt-1.5" :model-value="pendingQty[l.variant_id] ?? l.qty" :min="l.min_order_qty" :max="Math.min(l.max_order_qty || 99, l.available_qty || 99)" :disabled="cart.busy.value || quoting" size="sm" :label="`Quantity of ${l.name}`" data-testid="checkout-qty" @update:model-value="changeQty(l.variant_id, $event)" /></span>
+              <span class="text-sm font-semibold" data-testid="checkout-line-total">{{ money(l.line_total) }}</span>
             </li>
           </ul>
 

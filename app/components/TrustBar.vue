@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Headset, RefreshCw, ShieldCheck, Truck } from '@lucide/vue'
+import { BadgeCheck, Gem, Headset, RefreshCw, ShieldCheck, Truck } from '@lucide/vue'
 import { site } from '~/config/site'
 
-const icons: Record<string, any> = { shield: ShieldCheck, truck: Truck, headset: Headset, refresh: RefreshCw }
+const icons: Record<string, any> = { shield: ShieldCheck, truck: Truck, headset: Headset, refresh: RefreshCw, gem: Gem, badge: BadgeCheck }
 </script>
 
 <template>

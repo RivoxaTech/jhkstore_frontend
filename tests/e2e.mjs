@@ -97,7 +97,7 @@ const soldOut = catalogue.find((p) => p.is_sold_out)
 const html = async (urlPath) => (await fetch(SITE + urlPath)).text()
 // a new phone number for every run: the API limits orders per phone number (10 an hour)
 const randomPhone = () => { const d = String(Math.floor(Math.random() * 1e8)).padStart(8, '0'); return `+92 3${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5)}` }
-const ADDRESS = { name: 'Test Buyer', phone: randomPhone(), line1: '12 Example Street', city: 'Springfield', postcode: '12345' }
+const ADDRESS = { name: 'Test Buyer', phone: randomPhone(), line1: '12 Example Street', city: 'Springfield' }
 const orderNumbers = {}
 
 /** Puts one toy in the cart through the API (the browser keeps the token in localStorage: set it before the page loads). */
@@ -112,7 +112,6 @@ async function fillCheckout(page, pay = 'cod') {
   await fill(page, '[data-testid="f-phone"]', ADDRESS.phone)
   await fill(page, '[data-testid="f-line1"]', ADDRESS.line1)
   await fill(page, '[data-testid="f-city"]', ADDRESS.city)
-  await fill(page, '[data-testid="f-postcode"]', ADDRESS.postcode)
   await click(page, pay === 'cod' ? '[data-testid="pay-cod"]' : '[data-testid="pay-bank"]')
   // the server prices the address: wait for the delivery line to settle
   await waitFor(page, () => /Free|Rs\.\s?\d/.test(document.querySelector('[data-testid="delivery-line"]')?.innerText || ''), null, 20000)
@@ -299,6 +298,20 @@ try {
     check(await exists(page, '[data-testid="f-name"]') && await exists(page, '[data-testid="pay-cod"]') && await exists(page, '[data-testid="pay-bank"]'), 'S6 checkout: contact, address and the two payment methods from the settings')
     check(await page.$eval('input[name="hp_extra"]', (e) => { const r = e.getBoundingClientRect(); return r.left < -500 || r.width <= 1 }), 'S6 checkout: the honeypot field `hp_extra` exists and is out of sight')
     check(await page.evaluate(() => document.querySelector('input[name="hp_extra"]').tabIndex) === -1, 'S6 checkout: the honeypot is out of the tab order')
+    check(!(await exists(page, '#area')) && !(await exists(page, '#postcode')) && !(await exists(page, '#country')) && await exists(page, '#city'), 'S6 checkout: no Area, Postcode or Country field (street address and city only)')
+    // + / - on a line of the order summary: the server prices the cart again, the totals follow at once
+    {
+      const qtyOf = () => page.$eval('[data-testid="checkout-qty"] input', (e) => Number(e.value))
+      const totalOf = () => text(page, '[data-testid="grand-total"]')
+      const cartToken = await page.evaluate(() => localStorage.getItem('jhk_cart_token'))
+      const serverQty = async () => (await api('GET', 'store/cart', { headers: { 'X-Cart-Token': cartToken } })).json?.data?.items?.[0]?.qty
+      const q0 = await qtyOf(); const t0 = await totalOf()
+      await click(page, '[data-testid="checkout-qty"] button[aria-label^="Increase"]')
+      check(await waitFor(page, (n) => Number(document.querySelector('[data-testid="checkout-qty"] input')?.value) === n && !document.querySelector('[data-testid="checkout-qty"] input')?.disabled, q0 + 1, 15000) && await waitFor(page, (before) => (document.querySelector('[data-testid="grand-total"]')?.innerText || '') !== before, t0, 15000), 'S6 checkout: + on a line raises the quantity and the total follows', { q0, t0, now: await totalOf() })
+      check(await serverQty() === q0 + 1, 'S6 checkout: the new quantity is the one in the server cart', await serverQty())
+      await click(page, '[data-testid="checkout-qty"] button[aria-label^="Decrease"]')
+      check(await waitFor(page, (n) => Number(document.querySelector('[data-testid="checkout-qty"] input')?.value) === n && !document.querySelector('[data-testid="checkout-qty"] input')?.disabled, q0, 15000) && await waitFor(page, (before) => (document.querySelector('[data-testid="grand-total"]')?.innerText || '') === before, t0, 15000), 'S6 checkout: - brings the quantity and the total back', { q0, t0, now: await totalOf() })
+    }
     await click(page, '[data-testid="place-order"]'); await sleep(400)
     check(await exists(page, '[aria-invalid="true"]') && !page.url().includes('/order/'), 'S6 checkout: an empty form is not sent; the fields say what is missing')
     await fillCheckout(page, 'cod')

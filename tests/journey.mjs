@@ -177,7 +177,7 @@ check(await exists(cust, '[data-testid="place-order"]') && !(await exists(cust, 
 await setValue(cust, '[data-testid="f-name"]', `Journey ${RUN}`)
 await setValue(cust, '[data-testid="f-phone"]', custPhone)
 await setValue(cust, '[data-testid="f-email"]', `journey${RUN}@example.test`.toLowerCase())
-await setValue(cust, '[data-testid="f-line1"]', '12 Journey Road'); await setValue(cust, '[data-testid="f-city"]', 'Springfield'); await setValue(cust, '[data-testid="f-postcode"]', '12345')
+await setValue(cust, '[data-testid="f-line1"]', '12 Journey Road'); await setValue(cust, '[data-testid="f-city"]', 'Springfield')
 await cust.click('[data-testid="pay-cod"]')
 await waitFor(cust, () => !document.querySelector('[data-testid="place-order"]')?.disabled, null, 20000)
 await sleep(2000)   // the cart keeps the phone a moment after typing (abandoned cart)
@@ -304,7 +304,7 @@ async function openCheckoutWith(page, variantId, qty = 1) {
 async function fillContact(page, name, phoneNo, email) {
   await setValue(page, '[data-testid="f-name"]', name); await setValue(page, '[data-testid="f-phone"]', phoneNo)
   if (email) await setValue(page, '[data-testid="f-email"]', email)
-  await setValue(page, '[data-testid="f-line1"]', '7 Bank Street'); await setValue(page, '[data-testid="f-city"]', 'Springfield'); await setValue(page, '[data-testid="f-postcode"]', '12345')
+  await setValue(page, '[data-testid="f-line1"]', '7 Bank Street'); await setValue(page, '[data-testid="f-city"]', 'Springfield')
 }
 const bankPhone = phone()
 const bankVariantId = simple.variant_id

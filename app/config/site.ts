@@ -20,12 +20,12 @@ export const site = {
    */
   heroFallback: { buttonText: 'Shop now', buttonLink: '/shop' },
 
-  /** The white bar under the hero. `icon` is one of: shield, truck, headset, refresh. */
+  /** The white bar under the hero. `icon` is one of: shield, truck, headset, refresh, gem, badge. */
   trust: [
     { icon: 'shield', title: 'Safe & Non-Toxic', text: '100% Child Safe' },
     { icon: 'truck', title: 'Fast Delivery', text: 'Across the country' },
-    { icon: 'headset', title: '24/7 Support', text: "We're Here to Help" },
-    { icon: 'refresh', title: 'Easy Returns', text: 'Hassle-Free' },
+    { icon: 'gem', title: 'Premium Goods', text: 'Quality You Can Trust' },
+    { icon: 'badge', title: 'Certified Item', text: 'Checked & Approved' },
   ],
 
   /** The "Our Collection" section of the home page. `{count}` = the number of products shown. */
