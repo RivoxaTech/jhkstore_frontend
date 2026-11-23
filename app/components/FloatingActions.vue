@@ -20,7 +20,7 @@ function top() { window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers
     <a
       v-if="whatsapp" :href="whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp" data-testid="whatsapp-float"
       class="grid h-[52px] w-[52px] place-items-center rounded-full bg-[#25D366] text-white shadow-[0_10px_24px_-8px_rgb(0_0_0/0.45)] transition hover:scale-105"
-    ><SocialIcon platform="whatsapp" :size="28" /></a>
+    ><SocialIcon platform="whatsapp" :size="28" mono /></a>
     <Transition enter-active-class="transition duration-200" enter-from-class="translate-y-2 opacity-0" leave-active-class="transition duration-150" leave-to-class="translate-y-2 opacity-0">
       <button v-if="shown" type="button" aria-label="Back to the top" data-testid="back-to-top" class="grid h-11 w-11 place-items-center rounded-full bg-white text-ink shadow-[0_10px_24px_-8px_rgb(0_0_0/0.35)] ring-1 ring-line transition hover:scale-105" @click="top"><ArrowUp :size="19" /></button>
     </Transition>
