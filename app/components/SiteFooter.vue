@@ -15,7 +15,7 @@ const whatsapp = computed(() => settings.value?.footer.whatsapp_url)
     <div class="container-page">
       <div class="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1.2fr] lg:gap-0">
         <div class="lg:pr-8">
-          <BrandLogo light :height="58" />
+          <BrandLogo black :height="58" />
           <p v-if="store?.tagline" class="mt-3 text-sm font-medium text-black">{{ store.tagline }}</p>
           <p v-if="settings?.footer.text" class="mt-3 max-w-xs text-sm text-black">{{ settings.footer.text }}</p>
         </div>
